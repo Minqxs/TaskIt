@@ -80,5 +80,17 @@ Seed credentials:
    ```
 3. Ensure API base URL in `mobile/App.js` points to your backend host.
 
+
+## Environment Notes (CI / restricted networks)
+If package installs fail with `403 Forbidden`, your environment is likely behind a policy proxy.
+
+- npm: configure your approved internal registry before install:
+  ```bash
+  npm config set registry <your-approved-registry>
+  ```
+- .NET SDK: install from your internal artifact mirror if `dotnet` is missing.
+
+In this execution environment, outbound package repositories are blocked by policy, so dependency restore/build commands cannot complete until registry access is configured.
+
 ## Out of Scope
 No chat, notifications, recurring bookings, admin dashboards, subscriptions, real payment integrations, or advanced search/filtering.
