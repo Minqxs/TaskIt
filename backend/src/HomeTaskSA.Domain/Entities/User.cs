@@ -9,5 +9,6 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public UserRole Role { get; set; }
 
+    public CustomerProfile? CustomerProfile { get; set; }
     public ServiceProviderProfile? ServiceProviderProfile { get; set; }
 }

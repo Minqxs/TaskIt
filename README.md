@@ -6,7 +6,7 @@ Mobile-first booking marketplace for household micro-services in a single geogra
 - Backend: .NET 8 Web API (Clean Architecture)
 - Database: PostgreSQL
 - Mobile: React Native (Expo)
-- Auth: JWT
+- Auth: JWT + Mock OAuth bootstrap endpoint
 - Payments: Mock escrow service
 
 ## Project Structure
@@ -15,6 +15,24 @@ Mobile-first booking marketplace for household micro-services in a single geogra
 - `backend/src/HomeTaskSA.Infrastructure`: EF Core DbContext, repositories, JWT/password/payment services
 - `backend/src/HomeTaskSA.API`: Thin controllers + DI + auth
 - `mobile`: Expo app
+
+## Registration
+### Customer registration (basic)
+Required fields:
+- email, password, role=Customer
+- fullName, phoneNumber
+
+### Service provider registration (extended + verification ready)
+Required fields:
+- email, password, role=ServiceProvider
+- fullName, phoneNumber
+- governmentIdNumber
+- city, district, addressLine
+
+Provider profile starts with `IsVerified=false` to support verification flow.
+
+## OAuth (MVP)
+`POST /api/auth/oauth` supports mocked OAuth login/registration for both roles. It links by `(provider, oauthSubject)` and can auto-create users if they do not exist.
 
 ## Booking Flow
 Strict state machine in domain model:
@@ -27,6 +45,7 @@ Payment status:
 ## API Endpoints
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/oauth`
 - `GET /api/providers`
 - `PUT /api/providers/rate`
 - `POST /api/bookings`

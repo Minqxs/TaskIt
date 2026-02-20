@@ -7,7 +7,9 @@ namespace HomeTaskSA.Infrastructure.Persistence;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<CustomerProfile> CustomerProfiles => Set<CustomerProfile>();
     public DbSet<ServiceProviderProfile> ServiceProviderProfiles => Set<ServiceProviderProfile>();
+    public DbSet<OAuthIdentity> OAuthIdentities => Set<OAuthIdentity>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<Review> Reviews => Set<Review>();
 
@@ -20,12 +22,27 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(x => x.Role).HasConversion<string>();
         });
 
+        modelBuilder.Entity<CustomerProfile>(entity =>
+        {
+            entity.HasKey(x => x.UserId);
+            entity.HasOne(x => x.User)
+                .WithOne(u => u.CustomerProfile)
+                .HasForeignKey<CustomerProfile>(x => x.UserId);
+        });
+
         modelBuilder.Entity<ServiceProviderProfile>(entity =>
         {
             entity.HasKey(x => x.UserId);
             entity.HasOne(x => x.User)
                 .WithOne(u => u.ServiceProviderProfile)
                 .HasForeignKey<ServiceProviderProfile>(x => x.UserId);
+        });
+
+        modelBuilder.Entity<OAuthIdentity>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.Provider, x.OAuthSubject }).IsUnique();
+            entity.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId);
         });
 
         modelBuilder.Entity<Booking>(entity =>
@@ -53,8 +70,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new User { Id = providerId, Email = "provider@hometask.sa", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.ServiceProvider }
         );
 
+        modelBuilder.Entity<CustomerProfile>().HasData(
+            new CustomerProfile { UserId = customerId, FullName = "Demo Customer", PhoneNumber = "+966500000001" }
+        );
+
         modelBuilder.Entity<ServiceProviderProfile>().HasData(
-            new ServiceProviderProfile { UserId = providerId, HourlyRate = 120m, IsVerified = false }
+            new ServiceProviderProfile
+            {
+                UserId = providerId,
+                HourlyRate = 120m,
+                FullName = "Demo Provider",
+                PhoneNumber = "+966500000002",
+                GovernmentIdNumber = "NID-998877",
+                City = "Riyadh",
+                District = "Olaya",
+                AddressLine = "Olaya Street",
+                IsVerified = false
+            }
         );
     }
 }

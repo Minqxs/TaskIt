@@ -11,9 +11,12 @@ public class ProviderService(IUserRepository users)
         var providers = await users.GetProvidersAsync(cancellationToken);
         return providers.Select(p => new ProviderDto(
             p.Id,
-            p.Email,
+            p.ServiceProviderProfile?.FullName ?? p.Email,
             p.ServiceProviderProfile?.HourlyRate ?? 0,
-            4.5)).ToList();
+            4.5,
+            p.ServiceProviderProfile?.City ?? string.Empty,
+            p.ServiceProviderProfile?.District ?? string.Empty,
+            p.ServiceProviderProfile?.IsVerified ?? false)).ToList();
     }
 
     public async Task UpdateRateAsync(Guid providerId, UpdateRateRequest request, CancellationToken cancellationToken = default)

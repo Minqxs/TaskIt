@@ -19,6 +19,16 @@ public class AuthController(AuthService authService) : ControllerBase
         return Ok(await authService.RegisterAsync(request, cancellationToken));
     }
 
+    [HttpPost("oauth")]
+    public async Task<ActionResult<AuthResponse>> OAuth(
+        [FromBody] OAuthLoginRequest request,
+        [FromServices] IValidator<OAuthLoginRequest> validator,
+        CancellationToken cancellationToken)
+    {
+        await validator.ValidateAndThrowAsync(request, cancellationToken);
+        return Ok(await authService.OAuthLoginAsync(request, cancellationToken));
+    }
+
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(
         [FromBody] LoginRequest request,

@@ -8,15 +8,34 @@ namespace HomeTaskSA.Infrastructure.Persistence;
 public class UserRepository(AppDbContext dbContext) : IUserRepository
 {
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
-        dbContext.Users.Include(x => x.ServiceProviderProfile).FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
+        dbContext.Users
+            .Include(x => x.CustomerProfile)
+            .Include(x => x.ServiceProviderProfile)
+            .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
 
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-        dbContext.Users.Include(x => x.ServiceProviderProfile).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        dbContext.Users
+            .Include(x => x.CustomerProfile)
+            .Include(x => x.ServiceProviderProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task<List<User>> GetProvidersAsync(CancellationToken cancellationToken = default) =>
-        dbContext.Users.Include(x => x.ServiceProviderProfile).Where(x => x.Role == UserRole.ServiceProvider).ToListAsync(cancellationToken);
+        dbContext.Users
+            .Include(x => x.ServiceProviderProfile)
+            .Where(x => x.Role == UserRole.ServiceProvider)
+            .ToListAsync(cancellationToken);
+
+    public Task<User?> GetByOAuthSubjectAsync(string provider, string oauthSubject, CancellationToken cancellationToken = default) =>
+        dbContext.OAuthIdentities
+            .Where(x => x.Provider == provider && x.OAuthSubject == oauthSubject)
+            .Select(x => x.User)
+            .Include(x => x.CustomerProfile)
+            .Include(x => x.ServiceProviderProfile)
+            .FirstOrDefaultAsync(cancellationToken);
 
     public Task AddAsync(User user, CancellationToken cancellationToken = default) => dbContext.Users.AddAsync(user, cancellationToken).AsTask();
+
+    public Task AddOAuthIdentityAsync(OAuthIdentity oauthIdentity, CancellationToken cancellationToken = default) => dbContext.OAuthIdentities.AddAsync(oauthIdentity, cancellationToken).AsTask();
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) => dbContext.SaveChangesAsync(cancellationToken);
 }

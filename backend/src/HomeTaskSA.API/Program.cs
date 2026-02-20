@@ -23,6 +23,7 @@ builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<ReviewService>();
 
 builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
+builder.Services.AddScoped<IValidator<OAuthLoginRequest>, OAuthLoginRequestValidator>();
 builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
 builder.Services.AddScoped<IValidator<CreateBookingRequest>, CreateBookingRequestValidator>();
 builder.Services.AddScoped<IValidator<CreateReviewRequest>, CreateReviewRequestValidator>();
