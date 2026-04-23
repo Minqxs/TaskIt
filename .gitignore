@@ -2,3 +2,7 @@
 **/obj/
 node_modules/
 .expo/
+.expo-export/
+.dotnet/
+.nuget/
+.idea/

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using FluentValidation;
 using HomeTaskSA.Application.DTOs;
 using HomeTaskSA.Application.Features.Auth;
@@ -8,11 +9,17 @@ using HomeTaskSA.Application.Features.Reviews;
 using HomeTaskSA.Infrastructure;
 using HomeTaskSA.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -56,7 +63,7 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.EnsureCreated();
+    await dbContext.Database.MigrateAsync();
 }
 
 app.UseAuthentication();

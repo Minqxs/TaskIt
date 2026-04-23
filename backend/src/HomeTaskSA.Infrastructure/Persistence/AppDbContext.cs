@@ -6,6 +6,8 @@ namespace HomeTaskSA.Infrastructure.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    private const string SeedPasswordHash = "$2a$11$qfPeq8YgA6jVS9uI95sy4uNQiT/GOj9j7dihf9Yf41hXvA6xQnAUW";
+
     public DbSet<User> Users => Set<User>();
     public DbSet<CustomerProfile> CustomerProfiles => Set<CustomerProfile>();
     public DbSet<ServiceProviderProfile> ServiceProviderProfiles => Set<ServiceProviderProfile>();
@@ -66,8 +68,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         var providerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
         modelBuilder.Entity<User>().HasData(
-            new User { Id = customerId, Email = "customer@hometask.sa", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.Customer },
-            new User { Id = providerId, Email = "provider@hometask.sa", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), Role = UserRole.ServiceProvider }
+            new User { Id = customerId, Email = "customer@hometask.sa", PasswordHash = SeedPasswordHash, Role = UserRole.Customer },
+            new User { Id = providerId, Email = "provider@hometask.sa", PasswordHash = SeedPasswordHash, Role = UserRole.ServiceProvider }
         );
 
         modelBuilder.Entity<CustomerProfile>().HasData(

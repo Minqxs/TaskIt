@@ -4,7 +4,7 @@ Mobile-first booking marketplace for household micro-services in a single geogra
 
 ## Stack
 - Backend: .NET 8 Web API (Clean Architecture)
-- Database: PostgreSQL
+- Database: PostgreSQL + Entity Framework Core
 - Mobile: React Native (Expo)
 - Auth: JWT + Mock OAuth bootstrap endpoint
 - Payments: Mock escrow service
@@ -12,9 +12,10 @@ Mobile-first booking marketplace for household micro-services in a single geogra
 ## Project Structure
 - `backend/src/HomeTaskSA.Domain`: Entities + domain rules
 - `backend/src/HomeTaskSA.Application`: CQRS-style request DTOs/services, interfaces, validators
-- `backend/src/HomeTaskSA.Infrastructure`: EF Core DbContext, repositories, JWT/password/payment services
+- `backend/src/HomeTaskSA.Infrastructure`: EF Core DbContext, repositories, migrations, JWT/password/payment services
 - `backend/src/HomeTaskSA.API`: Thin controllers + DI + auth
-- `mobile`: Expo app
+- `mobile`: Expo app entry
+- `mobile/src`: Screens, components, API services, and shared styling
 
 ## Registration
 ### Customer registration (basic)
@@ -59,12 +60,16 @@ Payment status:
 ### Backend
 1. Install .NET 8 SDK and PostgreSQL.
 2. Update connection string in `backend/src/HomeTaskSA.API/appsettings.json`.
-3. Apply SQL migration from `backend/src/HomeTaskSA.Infrastructure/Migrations/0001_Initial.sql`.
+3. Apply EF Core migrations:
+   ```bash
+   dotnet ef database update --project backend/src/HomeTaskSA.Infrastructure --startup-project backend/src/HomeTaskSA.API
+   ```
 4. Run API:
    ```bash
-   cd backend/src/HomeTaskSA.API
-   dotnet run
+   dotnet run --project backend/src/HomeTaskSA.API
    ```
+
+The API also applies pending EF Core migrations on startup.
 
 Seed credentials:
 - Customer: `customer@hometask.sa` / `Password123!`
@@ -72,13 +77,21 @@ Seed credentials:
 
 ### Mobile
 1. Install Node 18+ and Expo CLI.
-2. Start app:
+2. Create `mobile/.env` from `mobile/.env.example` and set `EXPO_PUBLIC_API_URL` if you are not using the default host.
+3. Start app:
    ```bash
    cd mobile
    npm install
    npm start
    ```
-3. Ensure API base URL in `mobile/App.js` points to your backend host.
+4. The Expo source now lives under `mobile/src`.
+
+Recommended API URLs:
+- Android emulator: `http://10.0.2.2:5000/api`
+- iOS simulator / same machine web: `http://localhost:5000/api`
+- Physical device on your LAN: `http://<your-pc-ip>:5000/api`
+
+`backend/src/HomeTaskSA.Infrastructure/Migrations/0001_Initial.sql` is now only a legacy bootstrap reference.
 
 
 ## Environment Notes (CI / restricted networks)
