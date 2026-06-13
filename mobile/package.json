@@ -7,17 +7,31 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
+<<<<<<< ours
+<<<<<<< ours
     "web": "expo start --web",
     "typecheck": "tsc --noEmit"
+=======
+    "web": "expo start --web"
+>>>>>>> theirs
+=======
+    "web": "expo start --web"
+>>>>>>> theirs
   },
   "dependencies": {
     "expo": "~51.0.28",
     "expo-secure-store": "~13.0.2",
     "react": "18.2.0",
     "react-native": "0.74.5"
+<<<<<<< ours
+<<<<<<< ours
   },
   "devDependencies": {
     "@types/react": "^18.3.28",
     "typescript": "^6.0.3"
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
   }
 }

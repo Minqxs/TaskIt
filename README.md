@@ -4,7 +4,15 @@ Mobile-first booking marketplace for household micro-services in a single geogra
 
 ## Stack
 - Backend: .NET 8 Web API (Clean Architecture)
+<<<<<<< ours
+<<<<<<< ours
 - Database: PostgreSQL + Entity Framework Core
+=======
+- Database: PostgreSQL
+>>>>>>> theirs
+=======
+- Database: PostgreSQL
+>>>>>>> theirs
 - Mobile: React Native (Expo)
 - Auth: JWT + Mock OAuth bootstrap endpoint
 - Payments: Mock escrow service
@@ -12,10 +20,22 @@ Mobile-first booking marketplace for household micro-services in a single geogra
 ## Project Structure
 - `backend/src/HomeTaskSA.Domain`: Entities + domain rules
 - `backend/src/HomeTaskSA.Application`: CQRS-style request DTOs/services, interfaces, validators
+<<<<<<< ours
+<<<<<<< ours
 - `backend/src/HomeTaskSA.Infrastructure`: EF Core DbContext, repositories, migrations, JWT/password/payment services
 - `backend/src/HomeTaskSA.API`: Thin controllers + DI + auth
 - `mobile`: Expo app entry
 - `mobile/src`: Screens, components, API services, and shared styling
+=======
+- `backend/src/HomeTaskSA.Infrastructure`: EF Core DbContext, repositories, JWT/password/payment services
+- `backend/src/HomeTaskSA.API`: Thin controllers + DI + auth
+- `mobile`: Expo app
+>>>>>>> theirs
+=======
+- `backend/src/HomeTaskSA.Infrastructure`: EF Core DbContext, repositories, JWT/password/payment services
+- `backend/src/HomeTaskSA.API`: Thin controllers + DI + auth
+- `mobile`: Expo app
+>>>>>>> theirs
 
 ## Registration
 ### Customer registration (basic)
@@ -60,6 +80,8 @@ Payment status:
 ### Backend
 1. Install .NET 8 SDK and PostgreSQL.
 2. Update connection string in `backend/src/HomeTaskSA.API/appsettings.json`.
+<<<<<<< ours
+<<<<<<< ours
 3. Apply EF Core migrations:
    ```bash
    dotnet ef database update --project backend/src/HomeTaskSA.Infrastructure --startup-project backend/src/HomeTaskSA.API
@@ -71,19 +93,43 @@ Payment status:
 
 The API also applies pending EF Core migrations on startup.
 
+=======
+=======
+>>>>>>> theirs
+3. Apply SQL migration from `backend/src/HomeTaskSA.Infrastructure/Migrations/0001_Initial.sql`.
+4. Run API:
+   ```bash
+   cd backend/src/HomeTaskSA.API
+   dotnet run
+   ```
+
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 Seed credentials:
 - Customer: `customer@hometask.sa` / `Password123!`
 - Provider: `provider@hometask.sa` / `Password123!`
 
 ### Mobile
 1. Install Node 18+ and Expo CLI.
+<<<<<<< ours
+<<<<<<< ours
 2. Create `mobile/.env` from `mobile/.env.example` and set `EXPO_PUBLIC_API_URL` if you are not using the default host.
 3. Start app:
+=======
+2. Start app:
+>>>>>>> theirs
+=======
+2. Start app:
+>>>>>>> theirs
    ```bash
    cd mobile
    npm install
    npm start
    ```
+<<<<<<< ours
+<<<<<<< ours
 4. The Expo source now lives under `mobile/src`.
 
 Recommended API URLs:
@@ -92,6 +138,12 @@ Recommended API URLs:
 - Physical device on your LAN: `http://<your-pc-ip>:5000/api`
 
 `backend/src/HomeTaskSA.Infrastructure/Migrations/0001_Initial.sql` is now only a legacy bootstrap reference.
+=======
+3. Ensure API base URL in `mobile/App.js` points to your backend host.
+>>>>>>> theirs
+=======
+3. Ensure API base URL in `mobile/App.js` points to your backend host.
+>>>>>>> theirs
 
 
 ## Environment Notes (CI / restricted networks)
