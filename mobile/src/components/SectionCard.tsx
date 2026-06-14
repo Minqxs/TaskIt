@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     borderRadius: theme.radius.md,
     borderWidth: 1,
-    padding: theme.spacing.lg,
+    padding: theme.spacing.md,
     ...theme.shadow.card
   },
   header: {
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: theme.colors.text,
-    fontSize: 21,
+    fontSize: 18,
     fontWeight: '800'
   },
   subtitle: {

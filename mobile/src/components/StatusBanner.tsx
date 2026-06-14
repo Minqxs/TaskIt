@@ -18,7 +18,7 @@ const tones: Record<
 > = {
   info: {
     backgroundColor: theme.colors.accentSoft,
-    borderColor: '#8cd9d0',
+    borderColor: '#fed7aa',
     textColor: theme.colors.accentDark
   },
   error: {

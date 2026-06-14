@@ -8,6 +8,7 @@ public record RegisterRequest(
     UserRole Role,
     string FullName,
     string PhoneNumber,
+    decimal? HourlyRate,
     string? GovernmentIdNumber,
     string? City,
     string? District,

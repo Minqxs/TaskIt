@@ -1,215 +1,199 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppModal } from '../components/AppModal';
 import { FormField } from '../components/FormField';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { SectionCard } from '../components/SectionCard';
 import { StatusBanner } from '../components/StatusBanner';
 import { theme } from '../theme';
-import type { AuthForm, UserRole } from '../types';
+import type { AuthForm, RegisterForm, UserRole } from '../types';
 
 interface AuthScreenProps {
-  apiBaseUrl: string;
   error: string;
   form: AuthForm;
   isBusy: boolean;
-  isRegister: boolean;
+  isRegisterOpen: boolean;
   message: string;
+  registerError: string;
+  registerForm: RegisterForm;
   onChangeField: <K extends keyof AuthForm>(field: K, value: AuthForm[K]) => void;
+  onChangeRegisterField: <K extends keyof RegisterForm>(field: K, value: RegisterForm[K]) => void;
+  onCloseRegister: () => void;
   onLogin: () => void;
-  onOAuthLogin: () => void;
+  onOpenRegister: () => void;
   onRegister: () => void;
-  onRoleChange: (role: UserRole) => void;
-  onToggleMode: () => void;
+  onRegisterRoleChange: (role: UserRole) => void;
 }
 
 export function AuthScreen({
-  apiBaseUrl,
   error,
   form,
   isBusy,
-  isRegister,
+  isRegisterOpen,
   message,
+  registerError,
+  registerForm,
   onChangeField,
+  onChangeRegisterField,
+  onCloseRegister,
   onLogin,
-  onOAuthLogin,
+  onOpenRegister,
   onRegister,
-  onRoleChange,
-  onToggleMode
+  onRegisterRoleChange
 }: AuthScreenProps) {
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <View style={styles.hero}>
-        <Text style={styles.eyebrow}>Mobile marketplace MVP</Text>
-        <Text style={styles.title}>HomeTask SA</Text>
-        <Text style={styles.subtitle}>
-          Customer booking, provider onboarding, and job status tracking now live in a clearer Expo structure.
-        </Text>
-      </View>
-
-      {message ? <StatusBanner message={message} tone="info" /> : null}
-      {error ? <StatusBanner message={error} tone="error" /> : null}
-
-      <SectionCard
-        subtitle="Choose a role, then sign in or register against the running API."
-        title={isRegister ? 'Create account' : 'Sign in'}
-      >
-        <View style={styles.roleRow}>
-          <PrimaryButton
-            label="Customer"
-            onPress={() => onRoleChange('Customer')}
-            style={styles.roleButton}
-            variant={form.role === 'Customer' ? 'primary' : 'secondary'}
-          />
-          <PrimaryButton
-            label="Service provider"
-            onPress={() => onRoleChange('ServiceProvider')}
-            style={styles.roleButton}
-            variant={form.role === 'ServiceProvider' ? 'primary' : 'secondary'}
-          />
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.hero}>
+          <Text style={styles.title}>HomeTask SA</Text>
+          <Text style={styles.subtitle}>Book trusted help for simple household tasks</Text>
         </View>
 
+        <View style={styles.loginCard}>
+          {message ? <StatusBanner message={message} tone="success" /> : null}
+          {error ? <StatusBanner message={error} tone="error" /> : null}
+
+          <FormField
+            autoCapitalize="none"
+            keyboardType="email-address"
+            label="Email"
+            onChangeText={(value) => onChangeField('email', value)}
+            placeholder="you@example.com"
+            textContentType="emailAddress"
+            value={form.email}
+          />
+          <FormField
+            label="Password"
+            onChangeText={(value) => onChangeField('password', value)}
+            placeholder="Password"
+            secureTextEntry
+            textContentType="password"
+            value={form.password}
+          />
+
+          <PrimaryButton disabled={isBusy} label={isBusy ? 'Logging in...' : 'Log in'} onPress={onLogin} />
+          <PrimaryButton disabled={isBusy} label="Create account" onPress={onOpenRegister} variant="secondary" />
+        </View>
+      </ScrollView>
+
+      <AppModal onClose={onCloseRegister} title="Create Account" visible={isRegisterOpen}>
+        {registerError ? <StatusBanner message={registerError} tone="error" /> : null}
+
+        <FormField
+          autoCapitalize="words"
+          label="Name"
+          onChangeText={(value) => onChangeRegisterField('fullName', value)}
+          placeholder="Your name"
+          textContentType="name"
+          value={registerForm.fullName}
+        />
         <FormField
           autoCapitalize="none"
           keyboardType="email-address"
           label="Email"
-          onChangeText={(value) => onChangeField('email', value)}
+          onChangeText={(value) => onChangeRegisterField('email', value)}
           placeholder="you@example.com"
-          value={form.email}
+          textContentType="emailAddress"
+          value={registerForm.email}
         />
         <FormField
           label="Password"
-          onChangeText={(value) => onChangeField('password', value)}
+          onChangeText={(value) => onChangeRegisterField('password', value)}
           placeholder="Password"
           secureTextEntry
-          value={form.password}
+          textContentType="newPassword"
+          value={registerForm.password}
+        />
+        <FormField
+          label="Confirm password"
+          onChangeText={(value) => onChangeRegisterField('confirmPassword', value)}
+          placeholder="Confirm password"
+          secureTextEntry
+          textContentType="newPassword"
+          value={registerForm.confirmPassword}
         />
 
-        {isRegister ? (
-          <>
-            <FormField
-              autoCapitalize="words"
-              label="Full name"
-              onChangeText={(value) => onChangeField('fullName', value)}
-              placeholder="Full name"
-              value={form.fullName}
+        <View style={styles.roleGroup}>
+          <Text style={styles.roleLabel}>Role</Text>
+          <View style={styles.roleRow}>
+            <PrimaryButton
+              label="Customer"
+              onPress={() => onRegisterRoleChange('Customer')}
+              style={styles.roleButton}
+              variant={registerForm.role === 'Customer' ? 'primary' : 'secondary'}
             />
-            <FormField
-              keyboardType="phone-pad"
-              label="Phone number"
-              onChangeText={(value) => onChangeField('phoneNumber', value)}
-              placeholder="Phone number"
-              value={form.phoneNumber}
+            <PrimaryButton
+              label="Service Provider"
+              onPress={() => onRegisterRoleChange('ServiceProvider')}
+              style={styles.roleButton}
+              variant={registerForm.role === 'ServiceProvider' ? 'primary' : 'secondary'}
             />
+          </View>
+        </View>
 
-            {form.role === 'ServiceProvider' ? (
-              <>
-                <FormField
-                  label="Government ID number"
-                  onChangeText={(value) => onChangeField('governmentIdNumber', value)}
-                  placeholder="Government ID number"
-                  value={form.governmentIdNumber}
-                />
-                <FormField
-                  autoCapitalize="words"
-                  label="City"
-                  onChangeText={(value) => onChangeField('city', value)}
-                  placeholder="City"
-                  value={form.city}
-                />
-                <FormField
-                  autoCapitalize="words"
-                  label="District"
-                  onChangeText={(value) => onChangeField('district', value)}
-                  placeholder="District"
-                  value={form.district}
-                />
-                <FormField
-                  autoCapitalize="sentences"
-                  label="Address line"
-                  onChangeText={(value) => onChangeField('addressLine', value)}
-                  placeholder="Address line"
-                  value={form.addressLine}
-                />
-                <Text style={styles.helperText}>Provider accounts start in an unverified state.</Text>
-              </>
-            ) : null}
-          </>
+        {registerForm.role === 'ServiceProvider' ? (
+          <FormField
+            keyboardType="decimal-pad"
+            label="Hourly rate"
+            onChangeText={(value) => onChangeRegisterField('hourlyRate', value)}
+            placeholder="120"
+            value={registerForm.hourlyRate}
+          />
         ) : null}
 
-        <PrimaryButton
-          disabled={isBusy}
-          label={isRegister ? 'Create account' : 'Log in'}
-          onPress={isRegister ? onRegister : onLogin}
-        />
-        <PrimaryButton
-          disabled={isBusy}
-          label="Continue with Google (mock)"
-          onPress={onOAuthLogin}
-          variant="secondary"
-        />
-        <PrimaryButton
-          label={isRegister ? 'Already have an account?' : 'Need to create an account?'}
-          onPress={onToggleMode}
-          variant="ghost"
-        />
-      </SectionCard>
-
-      <SectionCard subtitle="These seeded users come from the backend seed data." title="Quick start">
-        <Text style={styles.quickStartText}>Customer: customer@hometask.sa / Password123!</Text>
-        <Text style={styles.quickStartText}>Provider: provider@hometask.sa / Password123!</Text>
-        <Text style={styles.apiHint}>API base URL: {apiBaseUrl}</Text>
-      </SectionCard>
-    </ScrollView>
+        <PrimaryButton disabled={isBusy} label={isBusy ? 'Creating account...' : 'Create account'} onPress={onRegister} />
+      </AppModal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1
+  },
   content: {
-    gap: theme.spacing.lg,
+    flexGrow: 1,
+    justifyContent: 'center',
     padding: theme.spacing.lg,
     paddingBottom: theme.spacing.xl
   },
   hero: {
-    gap: theme.spacing.xs,
-    paddingTop: theme.spacing.sm
-  },
-  eyebrow: {
-    color: theme.colors.accentDark,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase'
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.lg
   },
   title: {
     color: theme.colors.text,
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: '900'
   },
   subtitle: {
     color: theme.colors.muted,
-    fontSize: 16,
-    lineHeight: 22,
-    maxWidth: 520
+    fontSize: 17,
+    lineHeight: 24,
+    maxWidth: 420
+  },
+  loginCard: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    gap: theme.spacing.md,
+    maxWidth: 520,
+    padding: theme.spacing.lg,
+    width: '100%',
+    ...theme.shadow.card
+  },
+  roleGroup: {
+    gap: theme.spacing.xs
+  },
+  roleLabel: {
+    color: theme.colors.text,
+    fontSize: 13,
+    fontWeight: '700'
   },
   roleRow: {
     gap: theme.spacing.sm
   },
   roleButton: {
     width: '100%'
-  },
-  helperText: {
-    color: theme.colors.muted,
-    fontSize: 13,
-    lineHeight: 18
-  },
-  quickStartText: {
-    color: theme.colors.text,
-    fontSize: 14,
-    lineHeight: 20
-  },
-  apiHint: {
-    color: theme.colors.muted,
-    fontSize: 13,
-    lineHeight: 18
   }
 });

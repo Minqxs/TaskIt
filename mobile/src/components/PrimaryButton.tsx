@@ -26,9 +26,9 @@ const variants: Record<
     textColor: '#ffffff'
   },
   secondary: {
-    backgroundColor: theme.colors.surfaceStrong,
-    borderColor: theme.colors.border,
-    textColor: theme.colors.text
+    backgroundColor: theme.colors.graySoft,
+    borderColor: theme.colors.graySoft,
+    textColor: theme.colors.grayDark
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 46,
+    minHeight: 48,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm
   },

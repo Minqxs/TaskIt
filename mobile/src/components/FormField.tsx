@@ -11,6 +11,9 @@ interface FormFieldProps {
   secureTextEntry?: boolean;
   autoCapitalize?: TextInputProps['autoCapitalize'];
   keyboardType?: TextInputProps['keyboardType'];
+  textContentType?: TextInputProps['textContentType'];
+  multiline?: boolean;
+  numberOfLines?: number;
 }
 
 export function FormField({
@@ -20,7 +23,10 @@ export function FormField({
   placeholder,
   secureTextEntry = false,
   autoCapitalize = 'none',
-  keyboardType = 'default'
+  keyboardType = 'default',
+  textContentType,
+  multiline = false,
+  numberOfLines
 }: FormFieldProps) {
   return (
     <View style={styles.container}>
@@ -32,7 +38,10 @@ export function FormField({
         placeholder={placeholder}
         placeholderTextColor={theme.colors.muted}
         secureTextEntry={secureTextEntry}
-        style={styles.input}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
+        style={[styles.input, multiline ? styles.inputMultiline : null]}
+        textContentType={textContentType}
         value={value}
       />
     </View>
@@ -49,7 +58,7 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   input: {
-    backgroundColor: theme.colors.surfaceStrong,
+    backgroundColor: theme.colors.surface,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.sm,
     borderWidth: 1,
@@ -58,5 +67,9 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm
+  },
+  inputMultiline: {
+    minHeight: 92,
+    textAlignVertical: 'top'
   }
 });

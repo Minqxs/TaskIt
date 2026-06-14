@@ -1,17 +1,20 @@
 export const theme = {
   colors: {
-    background: '#f4efe6',
-    surface: '#fffaf2',
-    surfaceStrong: '#fdf6ea',
-    border: '#d7cfc0',
-    text: '#19323c',
-    muted: '#5f6b6d',
-    accent: '#0f766e',
-    accentDark: '#115e59',
-    accentSoft: '#d7f3ef',
+    background: '#f6f7f9',
+    surface: '#ffffff',
+    surfaceStrong: '#f9fafb',
+    border: '#e2e5ea',
+    text: '#24272c',
+    muted: '#69707a',
+    accent: '#f97316',
+    accentDark: '#c2410c',
+    accentSoft: '#ffedd5',
+    gray: '#6b7280',
+    grayDark: '#374151',
+    graySoft: '#eef0f3',
     warning: '#b45309',
-    warningSoft: '#fff3d6',
-    success: '#166534',
+    warningSoft: '#fff7ed',
+    success: '#15803d',
     successSoft: '#dcfce7',
     danger: '#b42318',
     dangerSoft: '#fee4e2'
@@ -24,17 +27,17 @@ export const theme = {
     xl: 32
   },
   radius: {
-    sm: 10,
-    md: 18,
-    lg: 28
+    sm: 8,
+    md: 12,
+    lg: 18
   },
   shadow: {
     card: {
-      shadowColor: '#19323c',
+      shadowColor: '#111827',
       shadowOpacity: 0.08,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 3
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 2
     }
   }
 };

@@ -4,7 +4,8 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 
 export type BannerTone = 'info' | 'error' | 'success';
 
-export type BookingWorkflowAction = 'accept' | 'start' | 'complete';
+export type BookingWorkflowAction = 'accept' | 'start' | 'complete' | 'review' | 'details';
+export type CustomerTaskAction = BookingWorkflowAction | 'edit' | 'delete';
 
 export interface Session {
   token: string;
@@ -13,15 +14,17 @@ export interface Session {
 }
 
 export interface AuthForm {
+  email: string;
+  password: string;
+}
+
+export interface RegisterForm {
   role: UserRole;
   email: string;
   password: string;
+  confirmPassword: string;
   fullName: string;
-  phoneNumber: string;
-  governmentIdNumber: string;
-  city: string;
-  district: string;
-  addressLine: string;
+  hourlyRate: string;
 }
 
 export interface AuthResponse extends Session {}
@@ -37,6 +40,7 @@ export interface RegisterPayload {
   role: UserRole;
   fullName: string;
   phoneNumber: string;
+  hourlyRate: number | null;
   governmentIdNumber: string | null;
   city: string | null;
   district: string | null;
@@ -63,6 +67,8 @@ export interface Provider {
 
 export interface Booking {
   id: string | number;
+  customerId?: string;
+  serviceProviderId?: string;
   description: string;
   totalAmount: number | string;
   date: string;
@@ -72,15 +78,40 @@ export interface Booking {
 }
 
 export interface CreateBookingPayload {
-  customerId: string;
-  serviceProviderId: string;
+  customerId?: string;
+  serviceProviderId?: string;
   date: string;
   durationHours: number;
   description: string;
+  offeredPrice?: number;
+}
+
+export interface CreateBookingForm {
+  title: string;
+  description: string;
+  category: string;
+  preferredDate: string;
+  preferredTime: string;
+  durationHours: string;
+  offeredPrice: string;
+  notes: string;
+}
+
+export interface CreateReviewPayload {
+  bookingId: Booking['id'];
+  rating: number;
+  comment: string;
+}
+
+export interface UpdateBookingPayload {
+  date: string;
+  durationHours: number;
+  description: string;
+  offeredPrice: number;
 }
 
 export interface BookingAction {
-  key: BookingWorkflowAction;
+  key: CustomerTaskAction;
   label: string;
   onPress: () => void;
   variant?: ButtonVariant;

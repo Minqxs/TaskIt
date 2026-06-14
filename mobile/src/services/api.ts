@@ -3,10 +3,12 @@ import type {
   AuthResponse,
   Booking,
   CreateBookingPayload,
+  CreateReviewPayload,
   LoginPayload,
   OAuthLoginPayload,
   Provider,
-  RegisterPayload
+  RegisterPayload,
+  UpdateBookingPayload
 } from '../types';
 
 interface RequestOptions {
@@ -113,7 +115,13 @@ export const authApi = {
 };
 
 export const providersApi = {
-  list: () => request<Provider[]>('/providers')
+  list: () => request<Provider[]>('/providers'),
+  updateRate: (hourlyRate: number, token: string) =>
+    request<void>('/providers/rate', {
+      method: 'PUT',
+      body: { hourlyRate },
+      token
+    })
 };
 
 export const bookingsApi = {
@@ -125,6 +133,10 @@ export const bookingsApi = {
     }),
   listByUserId: (userId: string, token: string) =>
     request<Booking[]>(`/bookings/${userId}`, {
+      token
+    }),
+  listMine: (token: string) =>
+    request<Booking[]>('/bookings/me', {
       token
     }),
   accept: (bookingId: Booking['id'], token: string) =>
@@ -140,6 +152,26 @@ export const bookingsApi = {
   complete: (bookingId: Booking['id'], token: string) =>
     request<Booking>(`/bookings/${bookingId}/complete`, {
       method: 'PUT',
+      token
+    }),
+  update: (bookingId: Booking['id'], payload: UpdateBookingPayload, token: string) =>
+    request<Booking>(`/bookings/${bookingId}`, {
+      method: 'PUT',
+      body: payload,
+      token
+    }),
+  cancel: (bookingId: Booking['id'], token: string) =>
+    request<void>(`/bookings/${bookingId}/cancel`, {
+      method: 'PUT',
+      token
+    })
+};
+
+export const reviewsApi = {
+  create: (payload: CreateReviewPayload, token: string) =>
+    request<void>('/reviews', {
+      method: 'POST',
+      body: payload,
       token
     })
 };

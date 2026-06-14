@@ -48,6 +48,12 @@ public class BookingRepository(AppDbContext dbContext) : IBookingRepository
     public Task<List<Booking>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
         dbContext.Bookings.Where(x => x.CustomerId == userId || x.ServiceProviderId == userId).OrderByDescending(x => x.Date).ToListAsync(cancellationToken);
 
+    public Task<List<Booking>> GetProviderQueueAsync(Guid providerId, CancellationToken cancellationToken = default) =>
+        dbContext.Bookings
+            .Where(x => x.ServiceProviderId == providerId || (x.ServiceProviderId == null && x.Status == BookingStatus.Pending))
+            .OrderByDescending(x => x.Date)
+            .ToListAsync(cancellationToken);
+
     public Task AddAsync(Booking booking, CancellationToken cancellationToken = default) => dbContext.Bookings.AddAsync(booking, cancellationToken).AsTask();
 
     public Task<bool> HasReviewAsync(Guid bookingId, CancellationToken cancellationToken = default) =>

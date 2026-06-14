@@ -147,8 +147,8 @@ namespace HomeTaskSA.Infrastructure.Migrations
                 columns: new[] { "Id", "Email", "PasswordHash", "Role" },
                 values: new object[,]
                 {
-                    { new Guid("11111111-1111-1111-1111-111111111111"), "customer@hometask.sa", "$2a$11$qfPeq8YgA6jVS9uI95sy4uNQiT/GOj9j7dihf9Yf41hXvA6xQnAUW", "Customer" },
-                    { new Guid("22222222-2222-2222-2222-222222222222"), "provider@hometask.sa", "$2a$11$qfPeq8YgA6jVS9uI95sy4uNQiT/GOj9j7dihf9Yf41hXvA6xQnAUW", "ServiceProvider" }
+                    { new Guid("11111111-1111-1111-1111-111111111111"), "customer@hometask.sa", "$2a$11$/i3fb2ksTjxve0a9hi.vp.ZDbsH0yYCb0NYLSm6IS7nAMb1TRTLT6", "Customer" },
+                    { new Guid("22222222-2222-2222-2222-222222222222"), "provider@hometask.sa", "$2a$11$/i3fb2ksTjxve0a9hi.vp.ZDbsH0yYCb0NYLSm6IS7nAMb1TRTLT6", "ServiceProvider" }
                 });
 
             migrationBuilder.InsertData(

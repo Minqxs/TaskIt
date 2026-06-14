@@ -51,8 +51,8 @@ CREATE TABLE "Reviews" (
 );
 
 INSERT INTO "Users" ("Id", "Email", "PasswordHash", "Role") VALUES
-('11111111-1111-1111-1111-111111111111', 'customer@hometask.sa', '$2a$11$qfPeq8YgA6jVS9uI95sy4uNQiT/GOj9j7dihf9Yf41hXvA6xQnAUW', 'Customer'),
-('22222222-2222-2222-2222-222222222222', 'provider@hometask.sa', '$2a$11$qfPeq8YgA6jVS9uI95sy4uNQiT/GOj9j7dihf9Yf41hXvA6xQnAUW', 'ServiceProvider');
+('11111111-1111-1111-1111-111111111111', 'customer@hometask.sa', '$2a$11$/i3fb2ksTjxve0a9hi.vp.ZDbsH0yYCb0NYLSm6IS7nAMb1TRTLT6', 'Customer'),
+('22222222-2222-2222-2222-222222222222', 'provider@hometask.sa', '$2a$11$/i3fb2ksTjxve0a9hi.vp.ZDbsH0yYCb0NYLSm6IS7nAMb1TRTLT6', 'ServiceProvider');
 
 INSERT INTO "CustomerProfiles" ("UserId", "FullName", "PhoneNumber") VALUES
 ('11111111-1111-1111-1111-111111111111', 'Demo Customer', '+966500000001');

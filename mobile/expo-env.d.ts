@@ -1,11 +1,17 @@
-declare namespace NodeJS {
-  interface ProcessEnv {
-    EXPO_PUBLIC_API_URL?: string;
-  }
+/// <reference types="expo/types" />
 
-  interface Process {
-    env: ProcessEnv;
-  }
-}
+declare const process:
+  | {
+      env?: {
+        EXPO_PUBLIC_API_URL?: string;
+      };
+    }
+  | undefined;
 
-declare const process: NodeJS.Process;
+declare const localStorage:
+  | {
+      getItem: (key: string) => string | null;
+      setItem: (key: string, value: string) => void;
+      removeItem: (key: string) => void;
+    }
+  | undefined;

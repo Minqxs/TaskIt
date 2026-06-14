@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
-import { API_BASE_URL } from './config/api';
 import { AuthScreen } from './screens/AuthScreen';
+import { BookingDetailsScreen } from './screens/BookingDetailsScreen';
+import { CreateBookingScreen } from './screens/CreateBookingScreen';
 import { DashboardScreen } from './screens/DashboardScreen';
-import { authApi, bookingsApi, providersApi } from './services/api';
+import { authApi, bookingsApi, providersApi, reviewsApi } from './services/api';
 import { clearStoredSession, loadStoredSession, saveStoredSession } from './services/storage';
 import { theme } from './theme';
 import type {
@@ -12,20 +13,35 @@ import type {
   Booking,
   BookingAction,
   BookingWorkflowAction,
+  CreateBookingForm,
   Provider,
+  RegisterForm,
   Session
 } from './types';
 
 const INITIAL_FORM: AuthForm = {
+  email: '',
+  password: ''
+};
+
+const INITIAL_REGISTER_FORM: RegisterForm = {
   role: 'Customer',
-  email: 'customer@hometask.sa',
-  password: 'Password123!',
+  email: '',
+  password: '',
+  confirmPassword: '',
   fullName: '',
-  phoneNumber: '',
-  governmentIdNumber: '',
-  city: '',
-  district: '',
-  addressLine: ''
+  hourlyRate: ''
+};
+
+const INITIAL_CREATE_BOOKING_FORM: CreateBookingForm = {
+  title: '',
+  description: '',
+  category: 'Cleaning',
+  preferredDate: '',
+  preferredTime: '',
+  durationHours: '2',
+  offeredPrice: '',
+  notes: ''
 };
 
 function getErrorMessage(error: unknown): string {
@@ -38,17 +54,26 @@ function getErrorMessage(error: unknown): string {
 
 export default function App() {
   const [form, setForm] = useState<AuthForm>(INITIAL_FORM);
+  const [registerForm, setRegisterForm] = useState<RegisterForm>(INITIAL_REGISTER_FORM);
   const [session, setSession] = useState<Session | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
-  const [isRegister, setIsRegister] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<Booking['id'] | null>(null);
+  const [customerScreen, setCustomerScreen] = useState<'home' | 'create' | 'details'>('home');
+  const [createBookingForm, setCreateBookingForm] = useState<CreateBookingForm>(INITIAL_CREATE_BOOKING_FORM);
+  const [editBookingForm, setEditBookingForm] = useState<CreateBookingForm>(INITIAL_CREATE_BOOKING_FORM);
+  const [isEditBookingOpen, setIsEditBookingOpen] = useState(false);
+  const [hourlyRate, setHourlyRate] = useState('');
+  const [reviewBookingId, setReviewBookingId] = useState<Booking['id'] | null>(null);
+  const [reviewRating, setReviewRating] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [isRestoring, setIsRestoring] = useState(true);
-  const [message, setMessage] = useState(
-    'Set EXPO_PUBLIC_API_URL when the API is not reachable at the local default.'
-  );
+  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [registerError, setRegisterError] = useState('');
+  const isCreatingBookingRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -79,7 +104,8 @@ export default function App() {
     if (!session) {
       setProviders([]);
       setBookings([]);
-      setSelectedProviderId(null);
+      setSelectedBookingId(null);
+      setCustomerScreen('home');
       return;
     }
 
@@ -97,16 +123,9 @@ export default function App() {
           }
 
           setProviders(nextProviders);
-          setSelectedProviderId((currentProviderId: string | null) => {
-            if (currentProviderId && nextProviders.some((provider) => provider.userId === currentProviderId)) {
-              return currentProviderId;
-            }
-
-            return nextProviders[0]?.userId ?? null;
-          });
         }
 
-        const nextBookings = await bookingsApi.listByUserId(session.userId, session.token);
+        const nextBookings = await bookingsApi.listMine(session.token);
         if (cancelled) {
           return;
         }
@@ -115,7 +134,15 @@ export default function App() {
         setMessage('Dashboard synced with the API.');
       } catch (hydrateError) {
         if (!cancelled) {
-          setError(getErrorMessage(hydrateError));
+          const hydrateErrorMessage = getErrorMessage(hydrateError);
+          if (hydrateErrorMessage.includes('status 401') || hydrateErrorMessage.includes('status 403')) {
+            await clearStoredSession();
+            setSession(null);
+            setMessage('');
+            setError('Your session expired. Please log in again.');
+          } else {
+            setError(hydrateErrorMessage);
+          }
         }
       } finally {
         if (!cancelled) {
@@ -136,6 +163,63 @@ export default function App() {
       ...currentForm,
       [field]: value
     }));
+  };
+
+  const updateRegisterField = <K extends keyof RegisterForm>(field: K, value: RegisterForm[K]) => {
+    setRegisterForm((currentForm) => ({
+      ...currentForm,
+      [field]: value
+    }));
+  };
+
+  const updateCreateBookingField = <K extends keyof CreateBookingForm>(field: K, value: CreateBookingForm[K]) => {
+    setCreateBookingForm((currentForm) => ({
+      ...currentForm,
+      [field]: value
+    }));
+  };
+
+  const updateEditBookingField = <K extends keyof CreateBookingForm>(field: K, value: CreateBookingForm[K]) => {
+    setEditBookingForm((currentForm) => ({
+      ...currentForm,
+      [field]: value
+    }));
+  };
+
+  const splitBookingDescription = (description: string): Pick<
+    CreateBookingForm,
+    'title' | 'category' | 'description' | 'notes'
+  > => {
+    const lines = description.split('\n');
+    const title = lines[0] ?? '';
+    const categoryLine = lines.find((line) => line.startsWith('Category: '));
+    const notesLine = lines.find((line) => line.startsWith('Notes: '));
+    const body = lines
+      .slice(1)
+      .filter((line) => !line.startsWith('Category: ') && !line.startsWith('Notes: '))
+      .join('\n');
+
+    return {
+      title,
+      category: categoryLine?.replace('Category: ', '') || 'Other',
+      description: body,
+      notes: notesLine?.replace('Notes: ', '') || ''
+    };
+  };
+
+  const openEditBooking = (booking: Booking) => {
+    const parsedDate = new Date(booking.date);
+    const parsedDescription = splitBookingDescription(booking.description);
+
+    setEditBookingForm({
+      ...parsedDescription,
+      preferredDate: Number.isNaN(parsedDate.getTime()) ? '' : parsedDate.toISOString().slice(0, 10),
+      preferredTime: Number.isNaN(parsedDate.getTime()) ? '' : parsedDate.toISOString().slice(11, 16),
+      durationHours: String(booking.durationHours),
+      offeredPrice: String(booking.totalAmount)
+    });
+    setError('');
+    setIsEditBookingOpen(true);
   };
 
   const runAction = async (action: () => Promise<void>) => {
@@ -166,13 +250,6 @@ export default function App() {
   const refreshProviders = async (announce = true): Promise<void> => {
     const nextProviders = await providersApi.list();
     setProviders(nextProviders);
-    setSelectedProviderId((currentProviderId: string | null) => {
-      if (currentProviderId && nextProviders.some((provider) => provider.userId === currentProviderId)) {
-        return currentProviderId;
-      }
-
-      return nextProviders[0]?.userId ?? null;
-    });
 
     if (announce) {
       setMessage(nextProviders.length > 0 ? `Loaded ${nextProviders.length} providers.` : 'No providers found yet.');
@@ -184,7 +261,7 @@ export default function App() {
       return;
     }
 
-    const nextBookings = await bookingsApi.listByUserId(session.userId, session.token);
+    const nextBookings = await bookingsApi.listMine(session.token);
     setBookings(nextBookings);
 
     if (announce) {
@@ -194,8 +271,12 @@ export default function App() {
 
   const handleLogin = async () => {
     await runAction(async () => {
+      if (!form.email.trim() || !form.password) {
+        throw new Error('Enter your email and password.');
+      }
+
       const payload = await authApi.login({
-        email: form.email,
+        email: form.email.trim(),
         password: form.password
       });
 
@@ -203,41 +284,92 @@ export default function App() {
     });
   };
 
-  const handleRegister = async () => {
-    await runAction(async () => {
-      const payload = await authApi.register({
-        email: form.email,
-        password: form.password,
-        role: form.role,
-        fullName: form.fullName,
-        phoneNumber: form.phoneNumber,
-        governmentIdNumber: form.role === 'ServiceProvider' ? form.governmentIdNumber : null,
-        city: form.role === 'ServiceProvider' ? form.city : null,
-        district: form.role === 'ServiceProvider' ? form.district : null,
-        addressLine: form.role === 'ServiceProvider' ? form.addressLine : null
-      });
+  const validateRegisterForm = (): number | null => {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      await completeAuth(payload, 'Account created.');
-    });
+    if (!registerForm.fullName.trim()) {
+      throw new Error('Name is required.');
+    }
+
+    if (!registerForm.email.trim() || !emailPattern.test(registerForm.email.trim())) {
+      throw new Error('Enter a valid email address.');
+    }
+
+    if (!registerForm.password) {
+      throw new Error('Password is required.');
+    }
+
+    if (registerForm.password !== registerForm.confirmPassword) {
+      throw new Error('Passwords must match.');
+    }
+
+    if (registerForm.role !== 'Customer' && registerForm.role !== 'ServiceProvider') {
+      throw new Error('Choose a role.');
+    }
+
+    if (registerForm.role === 'ServiceProvider') {
+      const hourlyRate = Number(registerForm.hourlyRate);
+      if (!registerForm.hourlyRate.trim() || Number.isNaN(hourlyRate) || hourlyRate <= 0) {
+        throw new Error('Hourly rate must be a number greater than 0.');
+      }
+
+      return hourlyRate;
+    }
+
+    return null;
   };
 
-  const handleOAuthLogin = async () => {
-    await runAction(async () => {
-      const payload = await authApi.oauthLogin({
-        provider: 'Google',
-        oAuthSubject: `mock-${form.email}`,
-        email: form.email,
-        role: form.role,
-        fullName: form.fullName || form.email
+  const handleRegister = async () => {
+    setIsBusy(true);
+    setRegisterError('');
+
+    try {
+      const hourlyRate = validateRegisterForm();
+
+      await authApi.register({
+        email: registerForm.email.trim(),
+        password: registerForm.password,
+        role: registerForm.role,
+        fullName: registerForm.fullName.trim(),
+        phoneNumber: '',
+        hourlyRate,
+        governmentIdNumber: null,
+        city: null,
+        district: null,
+        addressLine: null
       });
 
-      await completeAuth(payload, 'Signed in with mock Google.');
-    });
+      setRegisterForm(INITIAL_REGISTER_FORM);
+      setIsRegisterOpen(false);
+      setMessage('Account created. Please log in.');
+      setError('');
+    } catch (registerActionError) {
+      setRegisterError(getErrorMessage(registerActionError));
+    } finally {
+      setIsBusy(false);
+    }
   };
 
   const handleRefreshProviders = async () => {
     await runAction(async () => {
       await refreshProviders();
+    });
+  };
+
+  const handleUpdateHourlyRate = async () => {
+    if (!session) {
+      return;
+    }
+
+    const nextHourlyRate = Number(hourlyRate);
+    if (!hourlyRate.trim() || Number.isNaN(nextHourlyRate) || nextHourlyRate <= 0) {
+      setError('Hourly rate must be a number greater than 0.');
+      return;
+    }
+
+    await runAction(async () => {
+      await providersApi.updateRate(nextHourlyRate, session.token);
+      setMessage('Hourly rate updated.');
     });
   };
 
@@ -247,31 +379,185 @@ export default function App() {
     });
   };
 
-  const handleCreateBooking = async () => {
-    if (!session || !selectedProviderId) {
-      setError('Choose a provider before creating a booking.');
+  const openCreateBooking = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const defaultDate = tomorrow.toISOString().slice(0, 10);
+
+    setCreateBookingForm((currentForm) => ({
+      ...INITIAL_CREATE_BOOKING_FORM,
+      category: currentForm.category || INITIAL_CREATE_BOOKING_FORM.category,
+      preferredDate: currentForm.preferredDate || defaultDate,
+      preferredTime: currentForm.preferredTime || '09:00'
+    }));
+    setError('');
+    setCustomerScreen('create');
+  };
+
+  const buildBookingDate = (): string => {
+    const date = createBookingForm.preferredDate.trim();
+    const time = createBookingForm.preferredTime.trim();
+    const parsedDate = new Date(`${date}T${time}:00`);
+
+    if (!date || !time || Number.isNaN(parsedDate.getTime())) {
+      throw new Error('Enter a valid preferred date and time.');
+    }
+
+    return parsedDate.toISOString();
+  };
+
+  const buildBookingDescription = (): string => {
+    const title = createBookingForm.title.trim();
+    const description = createBookingForm.description.trim();
+    const notes = createBookingForm.notes.trim();
+
+    if (!title) {
+      throw new Error('Task title is required.');
+    }
+
+    if (!description) {
+      throw new Error('Task description is required.');
+    }
+
+    return [
+      title,
+      `Category: ${createBookingForm.category}`,
+      description,
+      notes ? `Notes: ${notes}` : ''
+    ]
+      .filter(Boolean)
+      .join('\n');
+  };
+
+  const handleSubmitCreateBooking = async () => {
+    if (!session || isCreatingBookingRef.current) {
       return;
     }
 
-    await runAction(async () => {
+    isCreatingBookingRef.current = true;
+    setIsBusy(true);
+    setError('');
+
+    try {
+      const durationHours = Number(createBookingForm.durationHours);
+      if (!Number.isInteger(durationHours) || durationHours < 1 || durationHours > 12) {
+        throw new Error('Duration must be a whole number between 1 and 12.');
+      }
+
+      const offeredPrice = Number(createBookingForm.offeredPrice);
+      if (!createBookingForm.offeredPrice.trim() || Number.isNaN(offeredPrice) || offeredPrice <= 0) {
+        throw new Error('Offered price must be a number greater than 0.');
+      }
+
       await bookingsApi.create(
         {
-          customerId: session.userId,
-          serviceProviderId: selectedProviderId,
-          date: new Date().toISOString(),
-          durationHours: 2,
-          description: 'General house cleaning'
+          date: buildBookingDate(),
+          durationHours,
+          description: buildBookingDescription(),
+          offeredPrice
         },
         session.token
       );
 
       await refreshBookings(false);
-      setMessage('Booking created.');
+      setCreateBookingForm(INITIAL_CREATE_BOOKING_FORM);
+      setCustomerScreen('home');
+      setMessage('Task posted successfully.');
+    } catch (createError) {
+      setError(getErrorMessage(createError));
+    } finally {
+      isCreatingBookingRef.current = false;
+      setIsBusy(false);
+    }
+  };
+
+  const handleSubmitEditBooking = async () => {
+    if (!session || !selectedBooking) {
+      return;
+    }
+
+    setIsBusy(true);
+    setError('');
+
+    try {
+      const durationHours = Number(editBookingForm.durationHours);
+      if (!Number.isInteger(durationHours) || durationHours < 1 || durationHours > 12) {
+        throw new Error('Duration must be a whole number between 1 and 12.');
+      }
+
+      const offeredPrice = Number(editBookingForm.offeredPrice);
+      if (!editBookingForm.offeredPrice.trim() || Number.isNaN(offeredPrice) || offeredPrice <= 0) {
+        throw new Error('Offered price must be a number greater than 0.');
+      }
+
+      const date = editBookingForm.preferredDate.trim();
+      const time = editBookingForm.preferredTime.trim();
+      const parsedDate = new Date(`${date}T${time}:00`);
+      if (!date || !time || Number.isNaN(parsedDate.getTime())) {
+        throw new Error('Enter a valid preferred date and time.');
+      }
+
+      const title = editBookingForm.title.trim();
+      const description = editBookingForm.description.trim();
+      if (!title) {
+        throw new Error('Task title is required.');
+      }
+
+      if (!description) {
+        throw new Error('Task description is required.');
+      }
+
+      await bookingsApi.update(
+        selectedBooking.id,
+        {
+          date: parsedDate.toISOString(),
+          durationHours,
+          description: [
+            title,
+            `Category: ${editBookingForm.category}`,
+            description,
+            editBookingForm.notes.trim() ? `Notes: ${editBookingForm.notes.trim()}` : ''
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          offeredPrice
+        },
+        session.token
+      );
+
+      await refreshBookings(false);
+      setIsEditBookingOpen(false);
+      setMessage('Task updated.');
+    } catch (editError) {
+      setError(getErrorMessage(editError));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId: Booking['id']) => {
+    if (!session) {
+      return;
+    }
+
+    await runAction(async () => {
+      await bookingsApi.cancel(bookingId, session.token);
+      await refreshBookings(false);
+      setSelectedBookingId(null);
+      setCustomerScreen('home');
+      setMessage('Task deleted.');
     });
   };
 
   const handleBookingAction = async (bookingId: Booking['id'], action: BookingWorkflowAction) => {
     if (!session) {
+      return;
+    }
+
+    if (action === 'review') {
+      setReviewBookingId(bookingId);
+      setReviewRating('');
+      setReviewComment('');
       return;
     }
 
@@ -295,6 +581,38 @@ export default function App() {
     });
   };
 
+  const handleSubmitReview = async () => {
+    if (!session || !reviewBookingId) {
+      return;
+    }
+
+    const rating = Number(reviewRating);
+    if (!reviewRating.trim() || Number.isNaN(rating) || rating < 1 || rating > 5) {
+      setError('Rating must be between 1 and 5.');
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      setError('Review comment is required.');
+      return;
+    }
+
+    await runAction(async () => {
+      await reviewsApi.create(
+        {
+          bookingId: reviewBookingId,
+          rating,
+          comment: reviewComment.trim()
+        },
+        session.token
+      );
+      setReviewBookingId(null);
+      setReviewRating('');
+      setReviewComment('');
+      setMessage('Review submitted.');
+    });
+  };
+
   const handleLogout = async () => {
     await runAction(async () => {
       await clearStoredSession();
@@ -312,9 +630,9 @@ export default function App() {
       if (booking.status === 'Pending') {
         return [
           {
-          key: 'accept',
-          label: 'Accept booking',
-          onPress: () => handleBookingAction(booking.id, 'accept'),
+            key: 'accept',
+            label: 'Accept',
+            onPress: () => handleBookingAction(booking.id, 'accept'),
             variant: 'primary'
           }
         ];
@@ -323,9 +641,9 @@ export default function App() {
       if (booking.status === 'Accepted') {
         return [
           {
-          key: 'start',
-          label: 'Start job',
-          onPress: () => handleBookingAction(booking.id, 'start'),
+            key: 'start',
+            label: 'Start job',
+            onPress: () => handleBookingAction(booking.id, 'start'),
             variant: 'primary'
           }
         ];
@@ -334,9 +652,9 @@ export default function App() {
       if (booking.status === 'InProgress') {
         return [
           {
-          key: 'complete',
-          label: 'Mark complete',
-          onPress: () => handleBookingAction(booking.id, 'complete'),
+            key: 'complete',
+            label: 'Mark complete',
+            onPress: () => handleBookingAction(booking.id, 'complete'),
             variant: 'primary'
           }
         ];
@@ -354,8 +672,42 @@ export default function App() {
       ];
     }
 
+    if (session.role === 'Customer' && booking.status === 'Pending') {
+      return [
+        {
+          key: 'edit',
+          label: 'Edit task',
+          onPress: () => openEditBooking(booking),
+          variant: 'secondary'
+        },
+        {
+          key: 'delete',
+          label: 'Delete task',
+          onPress: () => handleDeleteBooking(booking.id),
+          variant: 'ghost'
+        }
+      ];
+    }
+
+    if (session.role === 'Customer' && booking.status === 'Completed' && booking.paymentStatus === 'Released') {
+      return [
+        {
+          key: 'review',
+          label: 'Leave review',
+          onPress: () => handleBookingAction(booking.id, 'review'),
+          variant: 'secondary'
+        }
+      ];
+    }
+
     return [];
   };
+
+  const selectedBooking = bookings.find((booking) => booking.id === selectedBookingId) ?? null;
+  const selectedBookingProvider =
+    selectedBooking && selectedBooking.serviceProviderId
+      ? providers.find((provider) => provider.userId === selectedBooking.serviceProviderId) ?? null
+      : null;
 
   if (isRestoring) {
     return (
@@ -372,36 +724,83 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
       {session ? (
-        <DashboardScreen
-          apiBaseUrl={API_BASE_URL}
-          bookings={bookings}
-          error={error}
-          getBookingActions={getBookingActions}
-          isBusy={isBusy}
-          message={message}
-          onCreateBooking={handleCreateBooking}
-          onLogout={handleLogout}
-          onRefreshBookings={handleRefreshBookings}
-          onRefreshProviders={handleRefreshProviders}
-          onSelectProvider={setSelectedProviderId}
-          providers={providers}
-          selectedProviderId={selectedProviderId}
-          session={session}
-        />
+        session.role === 'Customer' && customerScreen === 'create' ? (
+          <CreateBookingScreen
+            error={error}
+            form={createBookingForm}
+            isBusy={isBusy}
+            onBack={() => {
+              setCustomerScreen('home');
+              setError('');
+            }}
+            onChangeField={updateCreateBookingField}
+            onSubmit={handleSubmitCreateBooking}
+          />
+        ) : session.role === 'Customer' && customerScreen === 'details' ? (
+          <BookingDetailsScreen
+            actions={selectedBooking ? getBookingActions(selectedBooking) : []}
+            booking={selectedBooking}
+            disabled={isBusy}
+            editForm={editBookingForm}
+            isEditOpen={isEditBookingOpen}
+            onBack={() => {
+              setCustomerScreen('home');
+              setSelectedBookingId(null);
+            }}
+            onChangeEditField={updateEditBookingField}
+            onCloseEdit={() => setIsEditBookingOpen(false)}
+            onSubmitEdit={handleSubmitEditBooking}
+            provider={selectedBookingProvider}
+          />
+        ) : (
+          <DashboardScreen
+            bookings={bookings}
+            error={error}
+            getBookingActions={getBookingActions}
+            hourlyRate={hourlyRate}
+            isReviewOpen={reviewBookingId !== null}
+            isBusy={isBusy}
+            message={message}
+            onChangeHourlyRate={setHourlyRate}
+            onChangeReviewComment={setReviewComment}
+            onChangeReviewRating={setReviewRating}
+            onCloseReview={() => setReviewBookingId(null)}
+            onCreateBooking={openCreateBooking}
+            onLogout={handleLogout}
+            onOpenBookingDetails={(bookingId) => {
+              setSelectedBookingId(bookingId);
+              setCustomerScreen('details');
+            }}
+            onRefreshBookings={handleRefreshBookings}
+            onUpdateHourlyRate={handleUpdateHourlyRate}
+            onSubmitReview={handleSubmitReview}
+            reviewComment={reviewComment}
+            reviewRating={reviewRating}
+            session={session}
+          />
+        )
       ) : (
         <AuthScreen
-          apiBaseUrl={API_BASE_URL}
           error={error}
           form={form}
           isBusy={isBusy}
-          isRegister={isRegister}
+          isRegisterOpen={isRegisterOpen}
           message={message}
+          registerError={registerError}
+          registerForm={registerForm}
           onChangeField={updateField}
+          onChangeRegisterField={updateRegisterField}
+          onCloseRegister={() => {
+            setRegisterError('');
+            setIsRegisterOpen(false);
+          }}
           onLogin={handleLogin}
-          onOAuthLogin={handleOAuthLogin}
+          onOpenRegister={() => {
+            setRegisterError('');
+            setIsRegisterOpen(true);
+          }}
           onRegister={handleRegister}
-          onRoleChange={(role) => updateField('role', role)}
-          onToggleMode={() => setIsRegister((currentValue) => !currentValue)}
+          onRegisterRoleChange={(role) => updateRegisterField('role', role)}
         />
       )}
     </SafeAreaView>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from './PrimaryButton';
+import { StatusBadge } from './StatusBadge';
 import { theme } from '../theme';
 import type { Booking, BookingAction } from '../types';
 
@@ -27,10 +28,15 @@ export function BookingCard({ booking, actions = [], disabled = false }: Booking
         <Text style={styles.amount}>R {Number(booking.totalAmount).toFixed(2)}</Text>
       </View>
 
-      <Text style={styles.meta}>Scheduled: {formatDate(booking.date)}</Text>
+      <View style={styles.badges}>
+        <StatusBadge label={booking.status} />
+        <StatusBadge label={booking.paymentStatus} />
+      </View>
+
+      <Text style={styles.meta}>{formatDate(booking.date)}</Text>
       <Text style={styles.meta}>Duration: {booking.durationHours} hours</Text>
-      <Text style={styles.meta}>Status: {booking.status}</Text>
-      <Text style={styles.meta}>Payment: {booking.paymentStatus}</Text>
+      {booking.customerId ? <Text style={styles.meta}>Customer: {booking.customerId}</Text> : null}
+      {booking.serviceProviderId ? <Text style={styles.meta}>Provider: {booking.serviceProviderId}</Text> : null}
 
       {actions.length > 0 ? (
         <View style={styles.actions}>
@@ -52,7 +58,7 @@ export function BookingCard({ booking, actions = [], disabled = false }: Booking
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surfaceStrong,
+    backgroundColor: theme.colors.surface,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.sm,
     borderWidth: 1,
@@ -79,6 +85,11 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     fontSize: 13,
     lineHeight: 18
+  },
+  badges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.xs
   },
   actions: {
     gap: theme.spacing.sm,

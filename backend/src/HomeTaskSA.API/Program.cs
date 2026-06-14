@@ -1,11 +1,5 @@
 using System.Text;
-<<<<<<< ours
-<<<<<<< ours
 using System.Text.Json.Serialization;
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 using FluentValidation;
 using HomeTaskSA.Application.DTOs;
 using HomeTaskSA.Application.Features.Auth;
@@ -15,33 +9,35 @@ using HomeTaskSA.Application.Features.Reviews;
 using HomeTaskSA.Infrastructure;
 using HomeTaskSA.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-<<<<<<< ours
-<<<<<<< ours
 using Microsoft.EntityFrameworkCore;
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-<<<<<<< ours
-<<<<<<< ours
+const string LocalDevelopmentCorsPolicy = "LocalDevelopmentCors";
+
 builder.Services
     .AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
-=======
-builder.Services.AddControllers();
->>>>>>> theirs
-=======
-builder.Services.AddControllers();
->>>>>>> theirs
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(LocalDevelopmentCorsPolicy, policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:8081",
+                "http://127.0.0.1:8081",
+                "http://localhost:19006",
+                "http://127.0.0.1:19006")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<AuthService>();
@@ -53,6 +49,7 @@ builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator
 builder.Services.AddScoped<IValidator<OAuthLoginRequest>, OAuthLoginRequestValidator>();
 builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
 builder.Services.AddScoped<IValidator<CreateBookingRequest>, CreateBookingRequestValidator>();
+builder.Services.AddScoped<IValidator<UpdateBookingRequest>, UpdateBookingRequestValidator>();
 builder.Services.AddScoped<IValidator<CreateReviewRequest>, CreateReviewRequestValidator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -83,17 +80,10 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-<<<<<<< ours
-<<<<<<< ours
     await dbContext.Database.MigrateAsync();
-=======
-    dbContext.Database.EnsureCreated();
->>>>>>> theirs
-=======
-    dbContext.Database.EnsureCreated();
->>>>>>> theirs
 }
 
+app.UseCors(LocalDevelopmentCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

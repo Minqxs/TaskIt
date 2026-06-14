@@ -45,7 +45,7 @@ namespace HomeTaskSA.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("ServiceProviderId")
+                    b.Property<Guid?>("ServiceProviderId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Status")
@@ -225,14 +225,14 @@ namespace HomeTaskSA.Infrastructure.Migrations
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             Email = "customer@hometask.sa",
-                            PasswordHash = "$2a$11$qfPeq8YgA6jVS9uI95sy4uNQiT/GOj9j7dihf9Yf41hXvA6xQnAUW",
+                            PasswordHash = "$2a$11$/i3fb2ksTjxve0a9hi.vp.ZDbsH0yYCb0NYLSm6IS7nAMb1TRTLT6",
                             Role = "Customer"
                         },
                         new
                         {
                             Id = new Guid("22222222-2222-2222-2222-222222222222"),
                             Email = "provider@hometask.sa",
-                            PasswordHash = "$2a$11$qfPeq8YgA6jVS9uI95sy4uNQiT/GOj9j7dihf9Yf41hXvA6xQnAUW",
+                            PasswordHash = "$2a$11$/i3fb2ksTjxve0a9hi.vp.ZDbsH0yYCb0NYLSm6IS7nAMb1TRTLT6",
                             Role = "ServiceProvider"
                         });
                 });
@@ -248,8 +248,7 @@ namespace HomeTaskSA.Infrastructure.Migrations
                     b.HasOne("HomeTaskSA.Domain.Entities.User", "ServiceProvider")
                         .WithMany()
                         .HasForeignKey("ServiceProviderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Customer");
 

@@ -6,7 +6,7 @@ public class Booking
 {
     public Guid Id { get; set; }
     public Guid CustomerId { get; set; }
-    public Guid ServiceProviderId { get; set; }
+    public Guid? ServiceProviderId { get; set; }
     public DateTime Date { get; set; }
     public int DurationHours { get; set; }
     public string Description { get; set; } = string.Empty;
@@ -15,14 +15,46 @@ public class Booking
     public PaymentStatus PaymentStatus { get; private set; } = PaymentStatus.Held;
 
     public User Customer { get; set; } = default!;
-    public User ServiceProvider { get; set; } = default!;
+    public User? ServiceProvider { get; set; }
     public Review? Review { get; set; }
 
-    public void Accept() => Transition(BookingStatus.Pending, BookingStatus.Accepted);
+    public void Accept(Guid providerId)
+    {
+        if (ServiceProviderId is not null && ServiceProviderId != providerId)
+        {
+            throw new InvalidOperationException("Task is already assigned to another provider.");
+        }
+
+        ServiceProviderId = providerId;
+        Transition(BookingStatus.Pending, BookingStatus.Accepted);
+    }
 
     public void Start() => Transition(BookingStatus.Accepted, BookingStatus.InProgress);
 
     public void CompleteByProvider() => Transition(BookingStatus.InProgress, BookingStatus.Completed);
+
+    public void UpdatePendingDetails(DateTime date, int durationHours, string description, decimal totalAmount)
+    {
+        if (Status != BookingStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending tasks can be edited.");
+        }
+
+        Date = date;
+        DurationHours = durationHours;
+        Description = description;
+        TotalAmount = totalAmount;
+    }
+
+    public void CancelByCustomer()
+    {
+        if (Status != BookingStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending tasks can be cancelled.");
+        }
+
+        Status = BookingStatus.Cancelled;
+    }
 
     public void ConfirmCompletionByCustomer()
     {

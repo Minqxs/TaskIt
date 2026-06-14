@@ -14,14 +14,15 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
         RuleFor(x => x.Password).MinimumLength(6);
         RuleFor(x => x.Role).Must(x => x is UserRole.Customer or UserRole.ServiceProvider);
         RuleFor(x => x.FullName).NotEmpty().MaximumLength(120);
-        RuleFor(x => x.PhoneNumber).NotEmpty().MaximumLength(30);
+        RuleFor(x => x.PhoneNumber).MaximumLength(30);
 
         When(x => x.Role == UserRole.ServiceProvider, () =>
         {
-            RuleFor(x => x.GovernmentIdNumber).NotEmpty().MaximumLength(50);
-            RuleFor(x => x.City).NotEmpty().MaximumLength(100);
-            RuleFor(x => x.District).NotEmpty().MaximumLength(100);
-            RuleFor(x => x.AddressLine).NotEmpty().MaximumLength(200);
+            RuleFor(x => x.HourlyRate).NotNull().GreaterThan(0);
+            RuleFor(x => x.GovernmentIdNumber).MaximumLength(50);
+            RuleFor(x => x.City).MaximumLength(100);
+            RuleFor(x => x.District).MaximumLength(100);
+            RuleFor(x => x.AddressLine).MaximumLength(200);
         });
     }
 }
@@ -75,13 +76,13 @@ public class AuthService(IUserRepository users, IPasswordHasher hasher, IJwtToke
                 ? new ServiceProviderProfile
                 {
                     UserId = Guid.Empty,
-                    HourlyRate = 100m,
+                    HourlyRate = request.HourlyRate ?? 100m,
                     FullName = request.FullName,
                     PhoneNumber = request.PhoneNumber,
-                    GovernmentIdNumber = request.GovernmentIdNumber!,
-                    City = request.City!,
-                    District = request.District!,
-                    AddressLine = request.AddressLine!,
+                    GovernmentIdNumber = request.GovernmentIdNumber ?? string.Empty,
+                    City = request.City ?? string.Empty,
+                    District = request.District ?? string.Empty,
+                    AddressLine = request.AddressLine ?? string.Empty,
                     IsVerified = false
                 }
                 : null

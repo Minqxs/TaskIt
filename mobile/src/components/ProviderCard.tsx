@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from './PrimaryButton';
+import { StatusBadge } from './StatusBadge';
 import { theme } from '../theme';
 import type { Provider } from '../types';
 
@@ -16,20 +17,15 @@ export function ProviderCard({ provider, selected, onSelect }: ProviderCardProps
       <View style={styles.header}>
         <View style={styles.titleBlock}>
           <Text style={styles.name}>{provider.name}</Text>
-          <Text style={styles.meta}>
-            {provider.city} / {provider.district}
-          </Text>
         </View>
-        <Text style={[styles.badge, provider.isVerified ? styles.badgeVerified : styles.badgePending]}>
-          {provider.isVerified ? 'Verified' : 'Review pending'}
-        </Text>
+        <StatusBadge label={provider.isVerified ? 'Verified' : 'Pending'} />
       </View>
 
       <Text style={styles.rate}>R {Number(provider.hourlyRate).toFixed(2)} / hour</Text>
       <Text style={styles.meta}>Rating {provider.rating} / 5</Text>
 
       <PrimaryButton
-        label={selected ? 'Selected' : 'Choose provider'}
+        label={selected ? 'Selected' : 'Book'}
         onPress={onSelect}
         variant={selected ? 'secondary' : 'primary'}
       />
@@ -39,7 +35,7 @@ export function ProviderCard({ provider, selected, onSelect }: ProviderCardProps
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surfaceStrong,
+    backgroundColor: theme.colors.surface,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.sm,
     borderWidth: 1,
@@ -73,22 +69,5 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     fontSize: 13,
     lineHeight: 18
-  },
-  badge: {
-    borderRadius: 999,
-    overflow: 'hidden',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 5,
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: '700'
-  },
-  badgeVerified: {
-    backgroundColor: theme.colors.successSoft,
-    color: theme.colors.success
-  },
-  badgePending: {
-    backgroundColor: theme.colors.warningSoft,
-    color: theme.colors.warning
   }
 });

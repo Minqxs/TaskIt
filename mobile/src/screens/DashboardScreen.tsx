@@ -1,123 +1,157 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppModal } from '../components/AppModal';
 import { BookingCard } from '../components/BookingCard';
+import { EmptyState } from '../components/EmptyState';
+import { FormField } from '../components/FormField';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { ProviderCard } from '../components/ProviderCard';
 import { SectionCard } from '../components/SectionCard';
 import { StatusBanner } from '../components/StatusBanner';
 import { theme } from '../theme';
-import type { Booking, BookingAction, Provider, Session } from '../types';
+import type { Booking, BookingAction, Session } from '../types';
 
 interface DashboardScreenProps {
-  apiBaseUrl: string;
   bookings: Booking[];
   error: string;
   getBookingActions: (booking: Booking) => BookingAction[];
   isBusy: boolean;
   message: string;
+  hourlyRate: string;
+  isReviewOpen: boolean;
+  reviewComment: string;
+  reviewRating: string;
+  onChangeReviewComment: (value: string) => void;
+  onChangeReviewRating: (value: string) => void;
   onCreateBooking: () => void;
+  onChangeHourlyRate: (value: string) => void;
+  onCloseReview: () => void;
+  onOpenBookingDetails: (bookingId: Booking['id']) => void;
   onLogout: () => void;
   onRefreshBookings: () => void;
-  onRefreshProviders: () => void;
-  onSelectProvider: (providerId: string) => void;
-  providers: Provider[];
-  selectedProviderId: string | null;
+  onUpdateHourlyRate: () => void;
+  onSubmitReview: () => void;
   session: Session;
 }
 
 export function DashboardScreen({
-  apiBaseUrl,
   bookings,
   error,
   getBookingActions,
   isBusy,
   message,
+  hourlyRate,
+  isReviewOpen,
+  reviewComment,
+  reviewRating,
+  onChangeReviewComment,
+  onChangeReviewRating,
   onCreateBooking,
+  onChangeHourlyRate,
+  onCloseReview,
+  onOpenBookingDetails,
   onLogout,
   onRefreshBookings,
-  onRefreshProviders,
-  onSelectProvider,
-  providers,
-  selectedProviderId,
+  onUpdateHourlyRate,
+  onSubmitReview,
   session
 }: DashboardScreenProps) {
-  const selectedProvider = providers.find((provider) => provider.userId === selectedProviderId) ?? null;
-
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.eyebrow}>Dashboard</Text>
-          <Text style={styles.title}>{session.role}</Text>
-          <Text style={styles.subtitle}>Signed in as {session.userId}</Text>
-        </View>
-
-        <View style={styles.headerActions}>
-          <PrimaryButton disabled={isBusy} label="Refresh bookings" onPress={onRefreshBookings} variant="secondary" />
-          <PrimaryButton label="Log out" onPress={onLogout} variant="ghost" />
-        </View>
-      </View>
-
-      {message ? <StatusBanner message={message} tone="success" /> : null}
-      {error ? <StatusBanner message={error} tone="error" /> : null}
-
-      {session.role === 'Customer' ? (
-        <SectionCard
-          subtitle="Choose a provider, then create a sample two-hour booking against the running API."
-          title="Providers"
-        >
-          <View style={styles.inlineActions}>
-            <PrimaryButton disabled={isBusy} label="Reload providers" onPress={onRefreshProviders} variant="secondary" />
-            <PrimaryButton disabled={isBusy || !selectedProviderId} label="Create booking" onPress={onCreateBooking} />
+    <>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <View style={styles.headerText}>
+            <Text style={styles.eyebrow}>{session.role}</Text>
+            <Text style={styles.title}>{session.role === 'Customer' ? 'Book a task' : 'Manage bookings'}</Text>
           </View>
 
-          <Text style={styles.helperText}>
-            {selectedProvider
-              ? `Selected provider: ${selectedProvider.name}`
-              : 'Choose a provider first to enable booking creation.'}
-          </Text>
+          <View style={styles.headerActions}>
+            <PrimaryButton disabled={isBusy} label="Refresh" onPress={onRefreshBookings} variant="secondary" />
+            <PrimaryButton label="Log out" onPress={onLogout} variant="ghost" />
+          </View>
+        </View>
 
-          {providers.length === 0 ? (
-            <Text style={styles.emptyText}>No providers loaded yet.</Text>
+        {message ? <StatusBanner message={message} tone="success" /> : null}
+        {error ? <StatusBanner message={error} tone="error" /> : null}
+
+        {session.role === 'Customer' ? (
+          <SectionCard title="Home">
+            <View style={styles.inlineActions}>
+              <PrimaryButton disabled={isBusy} label="Create Task" onPress={onCreateBooking} />
+            </View>
+
+            <Text style={styles.helperText}>Post a task and service providers can accept it from their bookings queue.</Text>
+          </SectionCard>
+        ) : null}
+
+        {session.role === 'ServiceProvider' ? (
+          <SectionCard title="Hourly rate">
+            <FormField
+              keyboardType="decimal-pad"
+              label="Hourly rate"
+              onChangeText={onChangeHourlyRate}
+              placeholder="120"
+              value={hourlyRate}
+            />
+            <PrimaryButton disabled={isBusy} label="Update rate" onPress={onUpdateHourlyRate} />
+          </SectionCard>
+        ) : null}
+
+        <SectionCard title={session.role === 'ServiceProvider' ? 'Bookings' : 'My bookings'}>
+          {bookings.length === 0 ? (
+            <>
+              <EmptyState
+                title={session.role === 'ServiceProvider' ? 'No bookings yet' : "You haven't posted any tasks yet."}
+                message={
+                  session.role === 'ServiceProvider'
+                    ? 'Accepted and pending jobs will appear here.'
+                    : 'Create a task when you need help at home.'
+                }
+              />
+              {session.role === 'Customer' ? <PrimaryButton label="Create Task" onPress={onCreateBooking} /> : null}
+            </>
           ) : (
-            providers.map((provider) => (
-              <ProviderCard
-                key={provider.userId}
-                onSelect={() => onSelectProvider(provider.userId)}
-                provider={provider}
-                selected={provider.userId === selectedProviderId}
+            bookings.map((booking) => (
+              <BookingCard
+                actions={
+                  session.role === 'Customer'
+                    ? [
+                        {
+                          key: 'details',
+                          label: 'View details',
+                          onPress: () => onOpenBookingDetails(booking.id),
+                          variant: 'secondary'
+                        },
+                        ...getBookingActions(booking)
+                      ]
+                    : getBookingActions(booking)
+                }
+                booking={booking}
+                disabled={isBusy}
+                key={booking.id}
               />
             ))
           )}
         </SectionCard>
-      ) : null}
+      </ScrollView>
 
-      <SectionCard
-        subtitle={
-          session.role === 'ServiceProvider'
-            ? 'Accept, start, and complete jobs from here.'
-            : 'Track each booking and confirm completion once the provider finishes.'
-        }
-        title="Bookings"
-      >
-        {bookings.length === 0 ? (
-          <Text style={styles.emptyText}>No bookings yet.</Text>
-        ) : (
-          bookings.map((booking) => (
-            <BookingCard
-              actions={getBookingActions(booking)}
-              booking={booking}
-              disabled={isBusy}
-              key={booking.id}
-            />
-          ))
-        )}
-      </SectionCard>
-
-      <SectionCard subtitle="Use EXPO_PUBLIC_API_URL in mobile/.env if you need a different host." title="Connection">
-        <Text style={styles.helperText}>API base URL: {apiBaseUrl}</Text>
-      </SectionCard>
-    </ScrollView>
+      <AppModal onClose={onCloseReview} title="Leave Review" visible={isReviewOpen}>
+        <FormField
+          keyboardType="number-pad"
+          label="Rating"
+          onChangeText={onChangeReviewRating}
+          placeholder="1 to 5"
+          value={reviewRating}
+        />
+        <FormField
+          autoCapitalize="sentences"
+          label="Comment"
+          onChangeText={onChangeReviewComment}
+          placeholder="How did the task go?"
+          value={reviewComment}
+        />
+        <PrimaryButton disabled={isBusy} label="Submit review" onPress={onSubmitReview} />
+      </AppModal>
+    </>
   );
 }
 
@@ -128,6 +162,7 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xl
   },
   header: {
+    alignItems: 'flex-start',
     gap: theme.spacing.md
   },
   headerText: {
@@ -142,13 +177,8 @@ const styles = StyleSheet.create({
   },
   title: {
     color: theme.colors.text,
-    fontSize: 34,
+    fontSize: 30,
     fontWeight: '900'
-  },
-  subtitle: {
-    color: theme.colors.muted,
-    fontSize: 14,
-    lineHeight: 20
   },
   headerActions: {
     gap: theme.spacing.sm
@@ -160,10 +190,5 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     fontSize: 13,
     lineHeight: 18
-  },
-  emptyText: {
-    color: theme.colors.muted,
-    fontSize: 14,
-    lineHeight: 20
   }
 });
