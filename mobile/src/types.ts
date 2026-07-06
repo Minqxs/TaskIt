@@ -4,8 +4,9 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 
 export type BannerTone = 'info' | 'error' | 'success';
 
-export type BookingWorkflowAction = 'accept' | 'start' | 'complete' | 'review' | 'details';
+export type BookingWorkflowAction = 'apply' | 'accept' | 'start' | 'complete' | 'review' | 'details';
 export type CustomerTaskAction = BookingWorkflowAction | 'edit' | 'delete';
+export type ProviderDashboardTab = 'available' | 'applications' | 'assigned';
 
 export interface Session {
   token: string;
@@ -75,6 +76,30 @@ export interface Booking {
   durationHours: number | string;
   status: string;
   paymentStatus: string;
+  interestCount?: number;
+  hasCurrentProviderInterest?: boolean;
+}
+
+export interface BookingApplication {
+  id: string;
+  bookingId: Booking['id'];
+  providerId: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  message?: string | null;
+  booking: Booking;
+}
+
+export interface BookingProviderApplication {
+  id: string;
+  bookingId: Booking['id'];
+  providerId: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  message?: string | null;
+  provider: Provider;
 }
 
 export interface CreateBookingPayload {

@@ -12,9 +12,12 @@ import type {
   AuthResponse,
   Booking,
   BookingAction,
+  BookingApplication,
+  BookingProviderApplication,
   BookingWorkflowAction,
   CreateBookingForm,
   Provider,
+  ProviderDashboardTab,
   RegisterForm,
   Session
 } from './types';
@@ -52,12 +55,37 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong while talking to the API.';
 }
 
+function withProviderInterestFlags(bookings: Booking[], applications: BookingApplication[]): Booking[] {
+  const appliedBookingIds = new Set(applications.map((application) => String(application.bookingId)));
+
+  return bookings.map((booking) => ({
+    ...booking,
+    hasCurrentProviderInterest: booking.hasCurrentProviderInterest || appliedBookingIds.has(String(booking.id))
+  }));
+}
+
+function isCancelledBooking(booking: Booking): boolean {
+  return booking.status === 'Cancelled';
+}
+
+function isAssignedProviderBooking(booking: Booking): boolean {
+  return !isCancelledBooking(booking) && booking.status !== 'Pending' && booking.status !== 'AwaitingCustomerSelection';
+}
+
+function isVisibleProviderApplication(application: BookingApplication): boolean {
+  return !isCancelledBooking(application.booking);
+}
+
 export default function App() {
   const [form, setForm] = useState<AuthForm>(INITIAL_FORM);
   const [registerForm, setRegisterForm] = useState<RegisterForm>(INITIAL_REGISTER_FORM);
   const [session, setSession] = useState<Session | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [availableBookings, setAvailableBookings] = useState<Booking[]>([]);
+  const [providerApplications, setProviderApplications] = useState<BookingApplication[]>([]);
+  const [selectedBookingApplications, setSelectedBookingApplications] = useState<BookingProviderApplication[]>([]);
+  const [providerTab, setProviderTab] = useState<ProviderDashboardTab>('available');
   const [selectedBookingId, setSelectedBookingId] = useState<Booking['id'] | null>(null);
   const [customerScreen, setCustomerScreen] = useState<'home' | 'create' | 'details'>('home');
   const [createBookingForm, setCreateBookingForm] = useState<CreateBookingForm>(INITIAL_CREATE_BOOKING_FORM);
@@ -104,6 +132,10 @@ export default function App() {
     if (!session) {
       setProviders([]);
       setBookings([]);
+      setAvailableBookings([]);
+      setProviderApplications([]);
+      setSelectedBookingApplications([]);
+      setProviderTab('available');
       setSelectedBookingId(null);
       setCustomerScreen('home');
       return;
@@ -123,6 +155,29 @@ export default function App() {
           }
 
           setProviders(nextProviders);
+        }
+
+        if (session.role === 'ServiceProvider') {
+          const [nextBookings, nextAvailableBookings, nextProviderApplications] = await Promise.all([
+            bookingsApi.listMine(session.token),
+            bookingsApi.listAvailable(session.token),
+            bookingsApi.listApplications(session.token)
+          ]);
+
+          if (cancelled) {
+            return;
+          }
+
+          setBookings(nextBookings.filter(isAssignedProviderBooking));
+          setAvailableBookings(
+            withProviderInterestFlags(
+              nextAvailableBookings.filter((booking) => !isCancelledBooking(booking)),
+              nextProviderApplications
+            )
+          );
+          setProviderApplications(nextProviderApplications.filter(isVisibleProviderApplication));
+          setMessage('Provider tasks synced with the API.');
+          return;
         }
 
         const nextBookings = await bookingsApi.listMine(session.token);
@@ -269,6 +324,31 @@ export default function App() {
     }
   };
 
+  const refreshProviderWorkspace = async (announce = true): Promise<void> => {
+    if (!session || session.role !== 'ServiceProvider') {
+      return;
+    }
+
+    const [nextBookings, nextAvailableBookings, nextProviderApplications] = await Promise.all([
+      bookingsApi.listMine(session.token),
+      bookingsApi.listAvailable(session.token),
+      bookingsApi.listApplications(session.token)
+    ]);
+
+    setBookings(nextBookings.filter(isAssignedProviderBooking));
+    setAvailableBookings(
+      withProviderInterestFlags(
+        nextAvailableBookings.filter((booking) => !isCancelledBooking(booking)),
+        nextProviderApplications
+      )
+    );
+    setProviderApplications(nextProviderApplications.filter(isVisibleProviderApplication));
+
+    if (announce) {
+      setMessage('Provider workspace refreshed.');
+    }
+  };
+
   const handleLogin = async () => {
     await runAction(async () => {
       if (!form.email.trim() || !form.password) {
@@ -375,7 +455,11 @@ export default function App() {
 
   const handleRefreshBookings = async () => {
     await runAction(async () => {
-      await refreshBookings();
+      if (session?.role === 'ServiceProvider') {
+        await refreshProviderWorkspace();
+      } else {
+        await refreshBookings();
+      }
     });
   };
 
@@ -544,6 +628,7 @@ export default function App() {
       await bookingsApi.cancel(bookingId, session.token);
       await refreshBookings(false);
       setSelectedBookingId(null);
+      setSelectedBookingApplications([]);
       setCustomerScreen('home');
       setMessage('Task deleted.');
     });
@@ -562,9 +647,9 @@ export default function App() {
     }
 
     await runAction(async () => {
-      if (action === 'accept') {
-        await bookingsApi.accept(bookingId, session.token);
-        setMessage('Booking accepted.');
+      if (action === 'apply' || action === 'accept') {
+        await bookingsApi.apply(bookingId, session.token);
+        setMessage('Interest sent. Waiting for the customer to choose a provider.');
       } else if (action === 'start') {
         await bookingsApi.start(bookingId, session.token);
         setMessage('Booking started.');
@@ -577,7 +662,11 @@ export default function App() {
         );
       }
 
-      await refreshBookings(false);
+      if (session.role === 'ServiceProvider') {
+        await refreshProviderWorkspace(false);
+      } else {
+        await refreshBookings(false);
+      }
     });
   };
 
@@ -613,6 +702,30 @@ export default function App() {
     });
   };
 
+  const refreshSelectedBookingApplications = async (bookingId: Booking['id']) => {
+    if (!session || session.role !== 'Customer') {
+      return;
+    }
+
+    const applications = await bookingsApi.listBookingApplications(bookingId, session.token);
+    setSelectedBookingApplications(applications);
+  };
+
+  const handleAssignProvider = async (applicationId: string) => {
+    if (!session || !selectedBooking) {
+      return;
+    }
+
+    await runAction(async () => {
+      const updatedBooking = await bookingsApi.selectApplication(selectedBooking.id, applicationId, session.token);
+      setBookings((currentBookings) =>
+        currentBookings.map((booking) => (booking.id === updatedBooking.id ? updatedBooking : booking))
+      );
+      await refreshSelectedBookingApplications(updatedBooking.id);
+      setMessage('Provider assigned. Task is now active.');
+    });
+  };
+
   const handleLogout = async () => {
     await runAction(async () => {
       await clearStoredSession();
@@ -621,23 +734,28 @@ export default function App() {
     });
   };
 
+  const openBookingDetails = async (bookingId: Booking['id']) => {
+    setSelectedBookingId(bookingId);
+    setSelectedBookingApplications([]);
+    setCustomerScreen('details');
+
+    if (!session || session.role !== 'Customer') {
+      return;
+    }
+
+    try {
+      await refreshSelectedBookingApplications(bookingId);
+    } catch (applicationsError) {
+      setError(getErrorMessage(applicationsError));
+    }
+  };
+
   const getBookingActions = (booking: Booking): BookingAction[] => {
     if (!session) {
       return [];
     }
 
     if (session.role === 'ServiceProvider') {
-      if (booking.status === 'Pending') {
-        return [
-          {
-            key: 'accept',
-            label: 'Accept',
-            onPress: () => handleBookingAction(booking.id, 'accept'),
-            variant: 'primary'
-          }
-        ];
-      }
-
       if (booking.status === 'Accepted') {
         return [
           {
@@ -703,6 +821,36 @@ export default function App() {
     return [];
   };
 
+  const getAvailableBookingActions = (booking: Booking): BookingAction[] => {
+    if (!session || session.role !== 'ServiceProvider') {
+      return [];
+    }
+
+    const alreadyApplied =
+      booking.hasCurrentProviderInterest ||
+      providerApplications.some((application) => String(application.bookingId) === String(booking.id));
+
+    if (alreadyApplied) {
+      return [
+        {
+          key: 'details',
+          label: 'Waiting for Customer',
+          onPress: () => setProviderTab('applications'),
+          variant: 'secondary'
+        }
+      ];
+    }
+
+    return [
+      {
+        key: 'apply',
+        label: isBusy ? 'Sending...' : 'Show Interest',
+        onPress: () => handleBookingAction(booking.id, 'apply'),
+        variant: 'primary'
+      }
+    ];
+  };
+
   const selectedBooking = bookings.find((booking) => booking.id === selectedBookingId) ?? null;
   const selectedBookingProvider =
     selectedBooking && selectedBooking.serviceProviderId
@@ -746,18 +894,25 @@ export default function App() {
             onBack={() => {
               setCustomerScreen('home');
               setSelectedBookingId(null);
+              setSelectedBookingApplications([]);
             }}
             onChangeEditField={updateEditBookingField}
+            onAssignProvider={handleAssignProvider}
             onCloseEdit={() => setIsEditBookingOpen(false)}
             onSubmitEdit={handleSubmitEditBooking}
             provider={selectedBookingProvider}
+            providerApplications={selectedBookingApplications}
           />
         ) : (
           <DashboardScreen
+            availableBookings={availableBookings}
             bookings={bookings}
             error={error}
+            getAvailableBookingActions={getAvailableBookingActions}
             getBookingActions={getBookingActions}
             hourlyRate={hourlyRate}
+            providerApplications={providerApplications}
+            providerTab={providerTab}
             isReviewOpen={reviewBookingId !== null}
             isBusy={isBusy}
             message={message}
@@ -766,11 +921,9 @@ export default function App() {
             onChangeReviewRating={setReviewRating}
             onCloseReview={() => setReviewBookingId(null)}
             onCreateBooking={openCreateBooking}
+            onChangeProviderTab={setProviderTab}
             onLogout={handleLogout}
-            onOpenBookingDetails={(bookingId) => {
-              setSelectedBookingId(bookingId);
-              setCustomerScreen('details');
-            }}
+            onOpenBookingDetails={openBookingDetails}
             onRefreshBookings={handleRefreshBookings}
             onUpdateHourlyRate={handleUpdateHourlyRate}
             onSubmitReview={handleSubmitReview}

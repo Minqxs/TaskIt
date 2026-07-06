@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppModal } from '../components/AppModal';
 import { BookingCard } from '../components/BookingCard';
@@ -6,8 +6,9 @@ import { EmptyState } from '../components/EmptyState';
 import { FormField } from '../components/FormField';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SectionCard } from '../components/SectionCard';
+import { StatusBadge } from '../components/StatusBadge';
 import { theme } from '../theme';
-import type { Booking, BookingAction, Provider } from '../types';
+import type { Booking, BookingAction, BookingProviderApplication, Provider } from '../types';
 
 interface BookingDetailsScreenProps {
   actions: BookingAction[];
@@ -25,9 +26,11 @@ interface BookingDetailsScreenProps {
   };
   isEditOpen: boolean;
   provider: Provider | null;
+  providerApplications: BookingProviderApplication[];
   onBack: () => void;
   onChangeEditField: (field: keyof BookingDetailsScreenProps['editForm'], value: string) => void;
   onCloseEdit: () => void;
+  onAssignProvider: (applicationId: string) => void;
   onSubmitEdit: () => void;
 }
 
@@ -38,11 +41,15 @@ export function BookingDetailsScreen({
   editForm,
   isEditOpen,
   provider,
+  providerApplications,
   onBack,
   onChangeEditField,
   onCloseEdit,
+  onAssignProvider,
   onSubmitEdit
 }: BookingDetailsScreenProps) {
+  const [selectedApplication, setSelectedApplication] = useState<BookingProviderApplication | null>(null);
+
   if (!booking) {
     return (
       <View style={styles.centered}>
@@ -74,6 +81,48 @@ export function BookingDetailsScreen({
             </>
           ) : (
             <EmptyState title="Waiting for provider" message="Waiting for a service provider to accept this task." />
+          )}
+        </SectionCard>
+
+        <SectionCard title="Interested providers">
+          {providerApplications.length === 0 ? (
+            <EmptyState
+              title="No provider interest yet."
+              message="Providers who apply for this task will appear here."
+            />
+          ) : (
+            providerApplications.map((application) => (
+              <View key={application.id} style={styles.applicationCard}>
+                <View style={styles.applicationHeader}>
+                  <View style={styles.applicationTitle}>
+                    <Text style={styles.providerName}>{application.provider.name}</Text>
+                    <Text style={styles.meta}>
+                      R {Number(application.provider.hourlyRate).toFixed(2)} / hour
+                    </Text>
+                  </View>
+                  <StatusBadge label={getApplicationStatusLabel(application.status)} />
+                </View>
+                <Text style={styles.meta}>Rating {application.provider.rating} / 5</Text>
+                {application.provider.city || application.provider.district ? (
+                  <Text style={styles.meta}>
+                    {[application.provider.district, application.provider.city].filter(Boolean).join(', ')}
+                  </Text>
+                ) : null}
+                <StatusBadge label={application.provider.isVerified ? 'Verified' : 'Pending verification'} />
+                <View style={styles.applicationActions}>
+                  <PrimaryButton
+                    label="Provider Details"
+                    onPress={() => setSelectedApplication(application)}
+                    variant="secondary"
+                  />
+                  <PrimaryButton
+                    disabled={disabled || !canAssignProvider(booking.status, application.status)}
+                    label={application.status === 'Selected' ? 'Selected' : 'Assign Provider'}
+                    onPress={() => onAssignProvider(application.id)}
+                  />
+                </View>
+              </View>
+            ))
           )}
         </SectionCard>
       </ScrollView>
@@ -138,7 +187,55 @@ export function BookingDetailsScreen({
         />
         <PrimaryButton disabled={disabled} label="Save changes" onPress={onSubmitEdit} />
       </AppModal>
+
+      <AppModal
+        onClose={() => setSelectedApplication(null)}
+        title="Provider Details"
+        visible={selectedApplication !== null}
+      >
+        {selectedApplication ? (
+          <>
+            <Text style={styles.providerName}>{selectedApplication.provider.name}</Text>
+            <Text style={styles.meta}>R {Number(selectedApplication.provider.hourlyRate).toFixed(2)} / hour</Text>
+            <Text style={styles.meta}>Rating {selectedApplication.provider.rating} / 5</Text>
+            {selectedApplication.provider.city || selectedApplication.provider.district ? (
+              <Text style={styles.meta}>
+                {[selectedApplication.provider.district, selectedApplication.provider.city].filter(Boolean).join(', ')}
+              </Text>
+            ) : null}
+            <StatusBadge label={selectedApplication.provider.isVerified ? 'Verified' : 'Pending verification'} />
+            <StatusBadge label={getApplicationStatusLabel(selectedApplication.status)} />
+            <PrimaryButton
+              disabled={disabled || !canAssignProvider(booking.status, selectedApplication.status)}
+              label={selectedApplication.status === 'Selected' ? 'Selected' : 'Assign Provider'}
+              onPress={() => {
+                onAssignProvider(selectedApplication.id);
+                setSelectedApplication(null);
+              }}
+            />
+          </>
+        ) : null}
+      </AppModal>
     </>
+  );
+}
+
+function getApplicationStatusLabel(status: string): string {
+  if (status === 'PendingCustomerDecision') {
+    return 'Waiting for Customer';
+  }
+
+  if (status === 'Rejected') {
+    return 'Not Selected';
+  }
+
+  return status;
+}
+
+function canAssignProvider(bookingStatus: string, applicationStatus: string): boolean {
+  return (
+    (bookingStatus === 'Pending' || bookingStatus === 'AwaitingCustomerSelection') &&
+    applicationStatus === 'PendingCustomerDecision'
   );
 }
 
@@ -177,6 +274,25 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: 18,
     fontWeight: '800'
+  },
+  applicationCard: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    gap: theme.spacing.xs,
+    padding: theme.spacing.md
+  },
+  applicationHeader: {
+    alignItems: 'flex-start',
+    gap: theme.spacing.sm
+  },
+  applicationTitle: {
+    gap: theme.spacing.xs
+  },
+  applicationActions: {
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm
   },
   meta: {
     color: theme.colors.muted,

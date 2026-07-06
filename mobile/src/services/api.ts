@@ -2,6 +2,8 @@ import { API_BASE_URL } from '../config/api';
 import type {
   AuthResponse,
   Booking,
+  BookingApplication,
+  BookingProviderApplication,
   CreateBookingPayload,
   CreateReviewPayload,
   LoginPayload,
@@ -137,6 +139,29 @@ export const bookingsApi = {
     }),
   listMine: (token: string) =>
     request<Booking[]>('/bookings/me', {
+      token
+    }),
+  listAvailable: (token: string) =>
+    request<Booking[]>('/bookings/available', {
+      token
+    }),
+  listApplications: (token: string) =>
+    request<BookingApplication[]>('/bookings/applications', {
+      token
+    }),
+  listBookingApplications: (bookingId: Booking['id'], token: string) =>
+    request<BookingProviderApplication[]>(`/bookings/${bookingId}/applications`, {
+      token
+    }),
+  selectApplication: (bookingId: Booking['id'], applicationId: string, token: string) =>
+    request<Booking>(`/bookings/${bookingId}/applications/${applicationId}/select`, {
+      method: 'PUT',
+      token
+    }),
+  apply: (bookingId: Booking['id'], token: string) =>
+    request<BookingApplication>(`/bookings/${bookingId}/apply`, {
+      method: 'POST',
+      body: {},
       token
     }),
   accept: (bookingId: Booking['id'], token: string) =>

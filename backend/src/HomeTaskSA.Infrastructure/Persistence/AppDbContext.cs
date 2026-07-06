@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ServiceProviderProfile> ServiceProviderProfiles => Set<ServiceProviderProfile>();
     public DbSet<OAuthIdentity> OAuthIdentities => Set<OAuthIdentity>();
     public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<BookingApplication> BookingApplications => Set<BookingApplication>();
     public DbSet<Review> Reviews => Set<Review>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -54,6 +55,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(x => x.PaymentStatus).HasConversion<string>();
             entity.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.ServiceProvider).WithMany().HasForeignKey(x => x.ServiceProviderId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<BookingApplication>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Status).HasConversion<string>();
+            entity.Property(x => x.Message).HasMaxLength(500);
+            entity.HasIndex(x => new { x.BookingId, x.ProviderId }).IsUnique();
+            entity.HasOne(x => x.Booking)
+                .WithMany(x => x.Applications)
+                .HasForeignKey(x => x.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Provider)
+                .WithMany()
+                .HasForeignKey(x => x.ProviderId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Review>(entity =>

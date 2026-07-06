@@ -13,7 +13,8 @@ export default function App() {
   const [isRegister, setIsRegister] = useState(false);
   const [role, setRole] = useState('Customer');
   const [email, setEmail] = useState('customer@hometask.sa');
-  const [password, setPassword] = useState('Password123!');
+  const [password, setPassword] = useState('' +
+      '');
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [governmentIdNumber, setGovernmentIdNumber] = useState('');

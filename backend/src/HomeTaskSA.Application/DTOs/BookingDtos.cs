@@ -5,3 +5,23 @@ namespace HomeTaskSA.Application.DTOs;
 public record CreateBookingRequest(Guid CustomerId, Guid? ServiceProviderId, DateTime Date, int DurationHours, string Description, decimal? OfferedPrice);
 public record UpdateBookingRequest(DateTime Date, int DurationHours, string Description, decimal OfferedPrice);
 public record BookingDto(Guid Id, Guid CustomerId, Guid? ServiceProviderId, DateTime Date, int DurationHours, string Description, decimal TotalAmount, BookingStatus Status, PaymentStatus PaymentStatus);
+public record CreateBookingApplicationRequest(string? Message);
+public record BookingApplicationDto(
+    Guid Id,
+    Guid BookingId,
+    Guid ProviderId,
+    BookingApplicationStatus Status,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    string? Message,
+    BookingDto Booking);
+
+public record BookingProviderApplicationDto(
+    Guid Id,
+    Guid BookingId,
+    Guid ProviderId,
+    BookingApplicationStatus Status,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    string? Message,
+    ProviderDto Provider);

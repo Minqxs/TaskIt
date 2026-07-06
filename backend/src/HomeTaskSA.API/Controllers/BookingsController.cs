@@ -34,6 +34,31 @@ public class BookingsController(BookingService bookings) : ControllerBase
         return Ok(await bookings.GetForCurrentUserAsync(userId, role, cancellationToken));
     }
 
+    [Authorize(Roles = "ServiceProvider")]
+    [HttpGet("available")]
+    public async Task<ActionResult<List<BookingDto>>> GetAvailable(CancellationToken cancellationToken)
+        => Ok(await bookings.GetAvailableForProviderAsync(GetCurrentUserId(), cancellationToken));
+
+    [Authorize(Roles = "ServiceProvider")]
+    [HttpGet("applications")]
+    public async Task<ActionResult<List<BookingApplicationDto>>> GetApplications(CancellationToken cancellationToken)
+        => Ok(await bookings.GetApplicationsForProviderAsync(GetCurrentUserId(), cancellationToken));
+
+    [Authorize(Roles = "Customer")]
+    [HttpGet("{id:guid}/applications")]
+    public async Task<ActionResult<List<BookingProviderApplicationDto>>> GetBookingApplications(
+        Guid id,
+        CancellationToken cancellationToken)
+        => Ok(await bookings.GetApplicationsForCustomerBookingAsync(id, GetCurrentUserId(), cancellationToken));
+
+    [Authorize(Roles = "Customer")]
+    [HttpPut("{id:guid}/applications/{applicationId:guid}/select")]
+    public async Task<ActionResult<BookingDto>> SelectBookingApplication(
+        Guid id,
+        Guid applicationId,
+        CancellationToken cancellationToken)
+        => Ok(await bookings.SelectProviderApplicationAsync(id, applicationId, GetCurrentUserId(), cancellationToken));
+
     [HttpGet("{userId:guid}")]
     public async Task<ActionResult<List<BookingDto>>> GetByUserId(Guid userId, CancellationToken cancellationToken)
         => Ok(await bookings.GetByUserIdAsync(userId, cancellationToken));
@@ -65,6 +90,23 @@ public class BookingsController(BookingService bookings) : ControllerBase
         var providerId = GetCurrentUserId();
         await bookings.AcceptAsync(id, providerId, cancellationToken);
         return NoContent();
+    }
+
+    [Authorize(Roles = "ServiceProvider")]
+    [HttpPost("{id:guid}/apply")]
+    public async Task<ActionResult<BookingApplicationDto>> Apply(
+        Guid id,
+        [FromBody] CreateBookingApplicationRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var providerId = GetCurrentUserId();
+        var application = await bookings.ShowInterestAsync(
+            id,
+            providerId,
+            request ?? new CreateBookingApplicationRequest(null),
+            cancellationToken);
+
+        return Ok(application);
     }
 
     [Authorize(Roles = "ServiceProvider")]

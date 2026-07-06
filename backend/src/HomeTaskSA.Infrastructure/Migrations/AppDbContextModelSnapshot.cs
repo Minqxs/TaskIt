@@ -64,6 +64,42 @@ namespace HomeTaskSA.Infrastructure.Migrations
                     b.ToTable("Bookings");
                 });
 
+            modelBuilder.Entity("HomeTaskSA.Domain.Entities.BookingApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderId");
+
+                    b.HasIndex("BookingId", "ProviderId")
+                        .IsUnique();
+
+                    b.ToTable("BookingApplications");
+                });
+
             modelBuilder.Entity("HomeTaskSA.Domain.Entities.CustomerProfile", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -255,6 +291,25 @@ namespace HomeTaskSA.Infrastructure.Migrations
                     b.Navigation("ServiceProvider");
                 });
 
+            modelBuilder.Entity("HomeTaskSA.Domain.Entities.BookingApplication", b =>
+                {
+                    b.HasOne("HomeTaskSA.Domain.Entities.Booking", "Booking")
+                        .WithMany("Applications")
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HomeTaskSA.Domain.Entities.User", "Provider")
+                        .WithMany()
+                        .HasForeignKey("ProviderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Provider");
+                });
+
             modelBuilder.Entity("HomeTaskSA.Domain.Entities.CustomerProfile", b =>
                 {
                     b.HasOne("HomeTaskSA.Domain.Entities.User", "User")
@@ -301,6 +356,8 @@ namespace HomeTaskSA.Infrastructure.Migrations
 
             modelBuilder.Entity("HomeTaskSA.Domain.Entities.Booking", b =>
                 {
+                    b.Navigation("Applications");
+
                     b.Navigation("Review");
                 });
 

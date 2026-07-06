@@ -16,10 +16,26 @@ function getPalette(label: string) {
     };
   }
 
-  if (normalizedLabel.includes('accepted') || normalizedLabel.includes('progress')) {
+  if (
+    normalizedLabel.includes('accepted') ||
+    normalizedLabel.includes('assigned') ||
+    normalizedLabel.includes('progress') ||
+    normalizedLabel.includes('selected')
+  ) {
     return {
       backgroundColor: theme.colors.accentSoft,
       color: theme.colors.accentDark
+    };
+  }
+
+  if (
+    normalizedLabel.includes('awaiting') ||
+    normalizedLabel.includes('pending') ||
+    normalizedLabel.includes('waiting')
+  ) {
+    return {
+      backgroundColor: theme.colors.warningSoft,
+      color: theme.colors.warning
     };
   }
 

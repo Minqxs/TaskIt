@@ -17,27 +17,81 @@ public class Booking
     public User Customer { get; set; } = default!;
     public User? ServiceProvider { get; set; }
     public Review? Review { get; set; }
+    public List<BookingApplication> Applications { get; set; } = [];
 
-    public void Accept(Guid providerId)
+    public BookingApplication ShowInterest(Guid providerId, string? message = null)
+    {
+        if (CustomerId == providerId)
+        {
+            throw new InvalidOperationException("Customers cannot show interest in their own task.");
+        }
+
+        if (Status != BookingStatus.Pending && Status != BookingStatus.AwaitingCustomerSelection)
+        {
+            throw new InvalidOperationException("Task is not open for provider interest.");
+        }
+
+        if (Applications.Any(x =>
+                x.ProviderId == providerId &&
+                x.Status is BookingApplicationStatus.PendingCustomerDecision or BookingApplicationStatus.Selected))
+        {
+            throw new InvalidOperationException("You have already shown interest in this task.");
+        }
+
+        var application = new BookingApplication
+        {
+            Id = Guid.NewGuid(),
+            BookingId = Id,
+            ProviderId = providerId,
+            Message = message,
+            Booking = this
+        };
+
+        Applications.Add(application);
+        ServiceProviderId = null;
+        Status = BookingStatus.AwaitingCustomerSelection;
+
+        return application;
+    }
+
+    public void AssignProvider(Guid providerId)
     {
         if (ServiceProviderId is not null && ServiceProviderId != providerId)
         {
             throw new InvalidOperationException("Task is already assigned to another provider.");
         }
 
+        if (Status != BookingStatus.Pending && Status != BookingStatus.AwaitingCustomerSelection)
+        {
+            throw new InvalidOperationException("Only open tasks can be assigned.");
+        }
+
         ServiceProviderId = providerId;
-        Transition(BookingStatus.Pending, BookingStatus.Accepted);
+        Status = BookingStatus.InProgress;
     }
 
-    public void Start() => Transition(BookingStatus.Accepted, BookingStatus.InProgress);
+    public void Accept(Guid providerId)
+    {
+        AssignProvider(providerId);
+    }
+
+    public void Start()
+    {
+        if (Status == BookingStatus.InProgress)
+        {
+            return;
+        }
+
+        Transition(BookingStatus.Accepted, BookingStatus.InProgress);
+    }
 
     public void CompleteByProvider() => Transition(BookingStatus.InProgress, BookingStatus.Completed);
 
     public void UpdatePendingDetails(DateTime date, int durationHours, string description, decimal totalAmount)
     {
-        if (Status != BookingStatus.Pending)
+        if (Status != BookingStatus.Pending && Status != BookingStatus.AwaitingCustomerSelection)
         {
-            throw new InvalidOperationException("Only pending tasks can be edited.");
+            throw new InvalidOperationException("Only open tasks can be edited.");
         }
 
         Date = date;
@@ -48,9 +102,9 @@ public class Booking
 
     public void CancelByCustomer()
     {
-        if (Status != BookingStatus.Pending)
+        if (Status != BookingStatus.Pending && Status != BookingStatus.AwaitingCustomerSelection)
         {
-            throw new InvalidOperationException("Only pending tasks can be cancelled.");
+            throw new InvalidOperationException("Only open tasks can be cancelled.");
         }
 
         Status = BookingStatus.Cancelled;

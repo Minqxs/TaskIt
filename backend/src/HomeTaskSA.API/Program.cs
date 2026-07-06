@@ -10,6 +10,7 @@ using HomeTaskSA.Infrastructure;
 using HomeTaskSA.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,12 +46,7 @@ builder.Services.AddScoped<ProviderService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<ReviewService>();
 
-builder.Services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
-builder.Services.AddScoped<IValidator<OAuthLoginRequest>, OAuthLoginRequestValidator>();
-builder.Services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
-builder.Services.AddScoped<IValidator<CreateBookingRequest>, CreateBookingRequestValidator>();
-builder.Services.AddScoped<IValidator<UpdateBookingRequest>, UpdateBookingRequestValidator>();
-builder.Services.AddScoped<IValidator<CreateReviewRequest>, CreateReviewRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
