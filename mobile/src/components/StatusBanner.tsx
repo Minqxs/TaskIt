@@ -17,9 +17,9 @@ const tones: Record<
   }
 > = {
   info: {
-    backgroundColor: theme.colors.accentSoft,
-    borderColor: '#fed7aa',
-    textColor: theme.colors.accentDark
+    backgroundColor: theme.colors.blueSoft,
+    borderColor: '#bfdbfe',
+    textColor: theme.colors.blue
   },
   error: {
     backgroundColor: theme.colors.dangerSoft,
@@ -60,6 +60,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
+    fontWeight: '700',
     lineHeight: 20
   }
 });

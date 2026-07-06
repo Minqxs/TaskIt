@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AppModal } from '../components/AppModal';
 import { FormField } from '../components/FormField';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { QuickChips } from '../components/QuickChips';
 import { StatusBanner } from '../components/StatusBanner';
 import { theme } from '../theme';
 import type { AuthForm, RegisterForm, UserRole } from '../types';
@@ -44,11 +45,24 @@ export function AuthScreen({
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
-          <Text style={styles.title}>HomeTask SA</Text>
-          <Text style={styles.subtitle}>Book trusted help for simple household tasks</Text>
+          <Text style={styles.eyebrow}>HomeTask SA</Text>
+          <Text style={styles.title}>Trusted home services, booked with confidence.</Text>
+          <Text style={styles.subtitle}>
+            Customers post tasks, providers show interest, and the customer chooses who gets assigned.
+          </Text>
+          <View style={styles.heroPills}>
+            <Text style={styles.heroPill}>Post tasks</Text>
+            <Text style={styles.heroPill}>Find work</Text>
+            <Text style={styles.heroPill}>Track progress</Text>
+          </View>
         </View>
 
         <View style={styles.loginCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Welcome back</Text>
+            <Text style={styles.cardSubtitle}>Log in to continue managing bookings and provider offers.</Text>
+          </View>
+
           {message ? <StatusBanner message={message} tone="success" /> : null}
           {error ? <StatusBanner message={error} tone="error" /> : null}
 
@@ -77,6 +91,15 @@ export function AuthScreen({
 
       <AppModal onClose={onCloseRegister} title="Create Account" visible={isRegisterOpen}>
         {registerError ? <StatusBanner message={registerError} tone="error" /> : null}
+
+        <View style={styles.modalIntro}>
+          <Text style={styles.cardSubtitle}>Choose the account type that matches how you will use HomeTask SA.</Text>
+          <QuickChips
+            items={['Customer', 'Service Provider']}
+            onSelect={(role) => onRegisterRoleChange(role === 'Service Provider' ? 'ServiceProvider' : 'Customer')}
+            selected={registerForm.role === 'ServiceProvider' ? 'Service Provider' : 'Customer'}
+          />
+        </View>
 
         <FormField
           autoCapitalize="words"
@@ -111,25 +134,6 @@ export function AuthScreen({
           textContentType="newPassword"
           value={registerForm.confirmPassword}
         />
-
-        <View style={styles.roleGroup}>
-          <Text style={styles.roleLabel}>Role</Text>
-          <View style={styles.roleRow}>
-            <PrimaryButton
-              label="Customer"
-              onPress={() => onRegisterRoleChange('Customer')}
-              style={styles.roleButton}
-              variant={registerForm.role === 'Customer' ? 'primary' : 'secondary'}
-            />
-            <PrimaryButton
-              label="Service Provider"
-              onPress={() => onRegisterRoleChange('ServiceProvider')}
-              style={styles.roleButton}
-              variant={registerForm.role === 'ServiceProvider' ? 'primary' : 'secondary'}
-            />
-          </View>
-        </View>
-
         {registerForm.role === 'ServiceProvider' ? (
           <FormField
             keyboardType="decimal-pad"
@@ -157,19 +161,44 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xl
   },
   hero: {
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
     marginBottom: theme.spacing.lg
+  },
+  eyebrow: {
+    color: theme.colors.accentDark,
+    fontSize: theme.typography.caption,
+    fontWeight: '900',
+    textTransform: 'uppercase'
   },
   title: {
     color: theme.colors.text,
-    fontSize: 38,
-    fontWeight: '900'
+    fontSize: theme.typography.hero,
+    fontWeight: '900',
+    lineHeight: 43,
+    maxWidth: 540
   },
   subtitle: {
     color: theme.colors.muted,
     fontSize: 17,
     lineHeight: 24,
     maxWidth: 420
+  },
+  heroPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.xs
+  },
+  heroPill: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    color: theme.colors.grayDark,
+    fontSize: theme.typography.bodySmall,
+    fontWeight: '900',
+    overflow: 'hidden',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm
   },
   loginCard: {
     backgroundColor: theme.colors.surface,
@@ -182,18 +211,20 @@ const styles = StyleSheet.create({
     width: '100%',
     ...theme.shadow.card
   },
-  roleGroup: {
+  cardHeader: {
     gap: theme.spacing.xs
   },
-  roleLabel: {
+  cardTitle: {
     color: theme.colors.text,
-    fontSize: 13,
-    fontWeight: '700'
+    fontSize: 22,
+    fontWeight: '900'
   },
-  roleRow: {
+  cardSubtitle: {
+    color: theme.colors.muted,
+    fontSize: theme.typography.body,
+    lineHeight: 21
+  },
+  modalIntro: {
     gap: theme.spacing.sm
-  },
-  roleButton: {
-    width: '100%'
   }
 });

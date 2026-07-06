@@ -26,8 +26,8 @@ const variants: Record<
     textColor: '#ffffff'
   },
   secondary: {
-    backgroundColor: theme.colors.graySoft,
-    borderColor: theme.colors.graySoft,
+    backgroundColor: theme.colors.surfaceStrong,
+    borderColor: theme.colors.border,
     textColor: theme.colors.grayDark
   },
   ghost: {
@@ -70,10 +70,10 @@ export function PrimaryButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    borderRadius: theme.radius.sm,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 50,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm
   },
@@ -86,6 +86,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 15,
-    fontWeight: '700'
+    fontWeight: '900'
   }
 });

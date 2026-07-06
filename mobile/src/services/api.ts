@@ -4,13 +4,17 @@ import type {
   Booking,
   BookingApplication,
   BookingProviderApplication,
+  CustomerProfile,
   CreateBookingPayload,
   CreateReviewPayload,
   LoginPayload,
   OAuthLoginPayload,
   Provider,
   RegisterPayload,
-  UpdateBookingPayload
+  ServiceProviderProfile,
+  UpdateBookingPayload,
+  UpdateCustomerProfilePayload,
+  UpdateServiceProviderProfilePayload
 } from '../types';
 
 interface RequestOptions {
@@ -122,6 +126,29 @@ export const providersApi = {
     request<void>('/providers/rate', {
       method: 'PUT',
       body: { hourlyRate },
+      token
+    })
+};
+
+export const profilesApi = {
+  getCustomer: (token: string) =>
+    request<CustomerProfile>('/profile/customer', {
+      token
+    }),
+  updateCustomer: (payload: UpdateCustomerProfilePayload, token: string) =>
+    request<CustomerProfile>('/profile/customer', {
+      method: 'PUT',
+      body: payload,
+      token
+    }),
+  getProvider: (token: string) =>
+    request<ServiceProviderProfile>('/profile/provider', {
+      token
+    }),
+  updateProvider: (payload: UpdateServiceProviderProfilePayload, token: string) =>
+    request<ServiceProviderProfile>('/profile/provider', {
+      method: 'PUT',
+      body: payload,
       token
     })
 };

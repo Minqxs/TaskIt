@@ -58,9 +58,9 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   input: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.surfaceStrong,
     borderColor: theme.colors.border,
-    borderRadius: theme.radius.sm,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
     color: theme.colors.text,
     fontSize: 16,
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm
   },
   inputMultiline: {
-    minHeight: 92,
+    minHeight: 104,
     textAlignVertical: 'top'
   }
 });

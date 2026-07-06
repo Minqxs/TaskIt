@@ -18,21 +18,21 @@ export function EmptyState({ title, message }: EmptyStateProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: theme.colors.surfaceStrong,
+    backgroundColor: theme.colors.accentMuted,
     borderColor: theme.colors.border,
-    borderRadius: theme.radius.sm,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    gap: theme.spacing.xs,
-    padding: theme.spacing.md
+    gap: theme.spacing.sm,
+    padding: theme.spacing.lg
   },
   title: {
     color: theme.colors.text,
-    fontSize: 15,
-    fontWeight: '800'
+    fontSize: theme.typography.title,
+    fontWeight: '900'
   },
   message: {
     color: theme.colors.muted,
-    fontSize: 13,
-    lineHeight: 18
+    fontSize: theme.typography.body,
+    lineHeight: 21
   }
 });

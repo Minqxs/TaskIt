@@ -4,7 +4,7 @@ import { AuthScreen } from './screens/AuthScreen';
 import { BookingDetailsScreen } from './screens/BookingDetailsScreen';
 import { CreateBookingScreen } from './screens/CreateBookingScreen';
 import { DashboardScreen } from './screens/DashboardScreen';
-import { authApi, bookingsApi, providersApi, reviewsApi } from './services/api';
+import { authApi, bookingsApi, profilesApi, providersApi, reviewsApi } from './services/api';
 import { clearStoredSession, loadStoredSession, saveStoredSession } from './services/storage';
 import { theme } from './theme';
 import type {
@@ -16,9 +16,11 @@ import type {
   BookingProviderApplication,
   BookingWorkflowAction,
   CreateBookingForm,
+  CustomerProfile,
   Provider,
   ProviderDashboardTab,
   RegisterForm,
+  ServiceProviderProfile,
   Session
 } from './types';
 
@@ -85,6 +87,8 @@ export default function App() {
   const [availableBookings, setAvailableBookings] = useState<Booking[]>([]);
   const [providerApplications, setProviderApplications] = useState<BookingApplication[]>([]);
   const [selectedBookingApplications, setSelectedBookingApplications] = useState<BookingProviderApplication[]>([]);
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
+  const [providerProfile, setProviderProfile] = useState<ServiceProviderProfile | null>(null);
   const [providerTab, setProviderTab] = useState<ProviderDashboardTab>('available');
   const [selectedBookingId, setSelectedBookingId] = useState<Booking['id'] | null>(null);
   const [customerScreen, setCustomerScreen] = useState<'home' | 'create' | 'details'>('home');
@@ -135,6 +139,8 @@ export default function App() {
       setAvailableBookings([]);
       setProviderApplications([]);
       setSelectedBookingApplications([]);
+      setCustomerProfile(null);
+      setProviderProfile(null);
       setProviderTab('available');
       setSelectedBookingId(null);
       setCustomerScreen('home');
@@ -149,19 +155,24 @@ export default function App() {
 
       try {
         if (session.role === 'Customer') {
-          const nextProviders = await providersApi.list();
+          const [nextProviders, nextCustomerProfile] = await Promise.all([
+            providersApi.list(),
+            profilesApi.getCustomer(session.token)
+          ]);
           if (cancelled) {
             return;
           }
 
           setProviders(nextProviders);
+          setCustomerProfile(nextCustomerProfile);
         }
 
         if (session.role === 'ServiceProvider') {
-          const [nextBookings, nextAvailableBookings, nextProviderApplications] = await Promise.all([
+          const [nextBookings, nextAvailableBookings, nextProviderApplications, nextProviderProfile] = await Promise.all([
             bookingsApi.listMine(session.token),
             bookingsApi.listAvailable(session.token),
-            bookingsApi.listApplications(session.token)
+            bookingsApi.listApplications(session.token),
+            profilesApi.getProvider(session.token)
           ]);
 
           if (cancelled) {
@@ -176,6 +187,8 @@ export default function App() {
             )
           );
           setProviderApplications(nextProviderApplications.filter(isVisibleProviderApplication));
+          setProviderProfile(nextProviderProfile);
+          setHourlyRate(String(nextProviderProfile.hourlyRate || ''));
           setMessage('Provider tasks synced with the API.');
           return;
         }
@@ -450,6 +463,65 @@ export default function App() {
     await runAction(async () => {
       await providersApi.updateRate(nextHourlyRate, session.token);
       setMessage('Hourly rate updated.');
+    });
+  };
+
+  const handleUpdateCustomerProfile = async (profile: {
+    fullName: string;
+    phoneNumber: string;
+  }) => {
+    if (!session || session.role !== 'Customer') {
+      return;
+    }
+
+    await runAction(async () => {
+      const updatedProfile = await profilesApi.updateCustomer(
+        {
+          fullName: profile.fullName,
+          phoneNumber: profile.phoneNumber
+        },
+        session.token
+      );
+      setCustomerProfile(updatedProfile);
+      setMessage('Customer profile updated.');
+    });
+  };
+
+  const handleUpdateProviderProfile = async (profile: {
+    fullName: string;
+    phoneNumber: string;
+    hourlyRate: string;
+    governmentIdNumber: string;
+    city: string;
+    district: string;
+    addressLine: string;
+  }) => {
+    if (!session || session.role !== 'ServiceProvider') {
+      return;
+    }
+
+    const nextHourlyRate = Number(profile.hourlyRate);
+    if (!profile.hourlyRate.trim() || Number.isNaN(nextHourlyRate) || nextHourlyRate <= 0) {
+      setError('Hourly rate must be a number greater than 0.');
+      return;
+    }
+
+    await runAction(async () => {
+      const updatedProfile = await profilesApi.updateProvider(
+        {
+          fullName: profile.fullName,
+          phoneNumber: profile.phoneNumber,
+          hourlyRate: nextHourlyRate,
+          governmentIdNumber: profile.governmentIdNumber,
+          city: profile.city,
+          district: profile.district,
+          addressLine: profile.addressLine
+        },
+        session.token
+      );
+      setProviderProfile(updatedProfile);
+      setHourlyRate(String(updatedProfile.hourlyRate || ''));
+      setMessage('Provider profile updated.');
     });
   };
 
@@ -907,10 +979,12 @@ export default function App() {
           <DashboardScreen
             availableBookings={availableBookings}
             bookings={bookings}
+            customerProfile={customerProfile}
             error={error}
             getAvailableBookingActions={getAvailableBookingActions}
             getBookingActions={getBookingActions}
             hourlyRate={hourlyRate}
+            providerProfile={providerProfile}
             providerApplications={providerApplications}
             providerTab={providerTab}
             isReviewOpen={reviewBookingId !== null}
@@ -925,6 +999,8 @@ export default function App() {
             onLogout={handleLogout}
             onOpenBookingDetails={openBookingDetails}
             onRefreshBookings={handleRefreshBookings}
+            onUpdateCustomerProfile={handleUpdateCustomerProfile}
+            onUpdateProviderProfile={handleUpdateProviderProfile}
             onUpdateHourlyRate={handleUpdateHourlyRate}
             onSubmitReview={handleSubmitReview}
             reviewComment={reviewComment}

@@ -2,6 +2,7 @@ using HomeTaskSA.Application.DTOs;
 using HomeTaskSA.Application.Features.Providers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace HomeTaskSA.API.Controllers;
 
@@ -17,8 +18,17 @@ public class ProvidersController(ProviderService providers) : ControllerBase
     [HttpPut("rate")]
     public async Task<IActionResult> PutRate([FromBody] UpdateRateRequest request, CancellationToken cancellationToken)
     {
-        var providerId = Guid.Parse(User.FindFirst("sub")!.Value);
+        var providerId = GetUserId();
         await providers.UpdateRateAsync(providerId, request, cancellationToken);
         return NoContent();
+    }
+
+    private Guid GetUserId()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub")
+            ?? throw new InvalidOperationException("Authenticated user id is missing.");
+
+        return Guid.Parse(userId);
     }
 }

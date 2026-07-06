@@ -16,12 +16,14 @@ function getPalette(label: string) {
     };
   }
 
-  if (
-    normalizedLabel.includes('accepted') ||
-    normalizedLabel.includes('assigned') ||
-    normalizedLabel.includes('progress') ||
-    normalizedLabel.includes('selected')
-  ) {
+  if (normalizedLabel.includes('open')) {
+    return {
+      backgroundColor: theme.colors.blueSoft,
+      color: theme.colors.blue
+    };
+  }
+
+  if (normalizedLabel.includes('accepted') || normalizedLabel.includes('assigned') || normalizedLabel.includes('progress') || normalizedLabel.includes('selected')) {
     return {
       backgroundColor: theme.colors.accentSoft,
       color: theme.colors.accentDark
@@ -65,7 +67,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 5,
-    fontSize: 12,
-    fontWeight: '800'
+    fontSize: theme.typography.caption,
+    fontWeight: '900'
   }
 });

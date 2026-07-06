@@ -5,6 +5,7 @@ using HomeTaskSA.Application.DTOs;
 using HomeTaskSA.Application.Features.Auth;
 using HomeTaskSA.Application.Features.Bookings;
 using HomeTaskSA.Application.Features.Providers;
+using HomeTaskSA.Application.Features.Profiles;
 using HomeTaskSA.Application.Features.Reviews;
 using HomeTaskSA.Infrastructure;
 using HomeTaskSA.Infrastructure.Persistence;
@@ -43,6 +44,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ProviderService>();
+builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<ReviewService>();
 

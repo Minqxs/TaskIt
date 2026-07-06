@@ -1,7 +1,10 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppHeader } from '../components/AppHeader';
 import { FormField } from '../components/FormField';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { ProgressTimeline } from '../components/ProgressTimeline';
+import { QuickChips } from '../components/QuickChips';
 import { SectionCard } from '../components/SectionCard';
 import { StatusBanner } from '../components/StatusBanner';
 import { theme } from '../theme';
@@ -28,17 +31,46 @@ export function CreateBookingScreen({
 }: CreateBookingScreenProps) {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={styles.eyebrow}>Customer</Text>
-          <Text style={styles.title}>Create Task</Text>
-        </View>
-        <PrimaryButton label="Back" onPress={onBack} variant="ghost" />
-      </View>
+      <AppHeader
+        actionLabel="Back"
+        eyebrow="Customer"
+        onAction={onBack}
+        subtitle="Tell providers exactly what you need, when you need it, and what budget you have in mind."
+        title="Create task"
+      />
 
       {error ? <StatusBanner message={error} tone="error" /> : null}
 
-      <SectionCard title="Task details">
+      <SectionCard title="Post in 3 steps" subtitle="Keep it simple. You can edit pending tasks later.">
+        <ProgressTimeline
+          steps={[
+            {
+              active: true,
+              complete: Boolean(form.category && form.title),
+              description: 'Choose a service and name the task.',
+              label: 'Task basics'
+            },
+            {
+              active: Boolean(form.description),
+              complete: Boolean(form.preferredDate && form.preferredTime),
+              description: 'Add timing, duration, and useful notes.',
+              label: 'Schedule'
+            },
+            {
+              active: Boolean(form.offeredPrice),
+              description: 'Review the budget and post for providers.',
+              label: 'Review'
+            }
+          ]}
+        />
+      </SectionCard>
+
+      <SectionCard title="Task basics" subtitle="A clear title helps the right providers respond.">
+        <View style={styles.categoryGroup}>
+          <Text style={styles.label}>Service category</Text>
+          <QuickChips items={categories} onSelect={(category) => onChangeField('category', category)} selected={form.category} />
+        </View>
+
         <FormField
           autoCapitalize="sentences"
           label="Task title"
@@ -55,22 +87,9 @@ export function CreateBookingScreen({
           placeholder="Describe what needs to be done"
           value={form.description}
         />
+      </SectionCard>
 
-        <View style={styles.categoryGroup}>
-          <Text style={styles.label}>Service category</Text>
-          <View style={styles.categoryGrid}>
-            {categories.map((category) => (
-              <PrimaryButton
-                key={category}
-                label={category}
-                onPress={() => onChangeField('category', category)}
-                style={styles.categoryButton}
-                variant={form.category === category ? 'primary' : 'secondary'}
-              />
-            ))}
-          </View>
-        </View>
-
+      <SectionCard title="Schedule and budget" subtitle="Providers use these details to decide if they can help.">
         <FormField
           label="Preferred date"
           onChangeText={(value) => onChangeField('preferredDate', value)}
@@ -106,12 +125,30 @@ export function CreateBookingScreen({
           placeholder="Access notes, supplies, or timing details"
           value={form.notes}
         />
-        <Text style={styles.helperText}>
-          Providers will see this pending task and can accept it from their bookings screen.
-        </Text>
       </SectionCard>
 
-      <PrimaryButton disabled={isBusy} label={isBusy ? 'Creating task...' : 'Submit task'} onPress={onSubmit} />
+      <SectionCard title="Review before posting">
+        <View style={styles.reviewCard}>
+          <View style={styles.reviewRow}>
+            <Text style={styles.reviewLabel}>Category</Text>
+            <Text style={styles.reviewValue}>{form.category || 'Choose a category'}</Text>
+          </View>
+          <View style={styles.reviewRow}>
+            <Text style={styles.reviewLabel}>When</Text>
+            <Text style={styles.reviewValue}>
+              {[form.preferredDate, form.preferredTime].filter(Boolean).join(' at ') || 'Add a date and time'}
+            </Text>
+          </View>
+          <View style={styles.reviewRow}>
+            <Text style={styles.reviewLabel}>Budget</Text>
+            <Text style={styles.reviewValue}>{form.offeredPrice ? `R ${form.offeredPrice}` : 'Add your offer'}</Text>
+          </View>
+        </View>
+        <Text style={styles.helperText}>
+          Providers will show interest first. You stay in control and choose who gets assigned.
+        </Text>
+        <PrimaryButton disabled={isBusy} label={isBusy ? 'Posting task...' : 'Post task'} onPress={onSubmit} />
+      </SectionCard>
     </ScrollView>
   );
 }
@@ -122,25 +159,6 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     paddingBottom: theme.spacing.xl
   },
-  header: {
-    alignItems: 'flex-start',
-    gap: theme.spacing.sm
-  },
-  headerText: {
-    gap: theme.spacing.xs
-  },
-  eyebrow: {
-    color: theme.colors.accentDark,
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase'
-  },
-  title: {
-    color: theme.colors.text,
-    fontSize: 30,
-    fontWeight: '900'
-  },
   categoryGroup: {
     gap: theme.spacing.xs
   },
@@ -149,15 +167,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700'
   },
-  categoryGrid: {
-    gap: theme.spacing.sm
-  },
-  categoryButton: {
-    width: '100%'
-  },
   helperText: {
     color: theme.colors.muted,
     fontSize: 13,
     lineHeight: 18
+  },
+  reviewCard: {
+    backgroundColor: theme.colors.surfaceStrong,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    gap: theme.spacing.sm,
+    padding: theme.spacing.md
+  },
+  reviewRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    justifyContent: 'space-between'
+  },
+  reviewLabel: {
+    color: theme.colors.muted,
+    fontSize: theme.typography.bodySmall,
+    fontWeight: '900'
+  },
+  reviewValue: {
+    color: theme.colors.text,
+    flex: 1,
+    fontSize: theme.typography.bodySmall,
+    fontWeight: '800',
+    textAlign: 'right'
   }
 });

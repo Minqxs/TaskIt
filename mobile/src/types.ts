@@ -56,6 +56,41 @@ export interface OAuthLoginPayload {
   fullName: string;
 }
 
+export interface CustomerProfile {
+  userId: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+}
+
+export interface UpdateCustomerProfilePayload {
+  fullName: string;
+  phoneNumber: string;
+}
+
+export interface ServiceProviderProfile {
+  userId: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  hourlyRate: number | string;
+  governmentIdNumber: string;
+  city: string;
+  district: string;
+  addressLine: string;
+  isVerified: boolean;
+}
+
+export interface UpdateServiceProviderProfilePayload {
+  fullName: string;
+  phoneNumber: string;
+  hourlyRate: number;
+  governmentIdNumber: string;
+  city: string;
+  district: string;
+  addressLine: string;
+}
+
 export interface Provider {
   userId: string;
   name: string;
