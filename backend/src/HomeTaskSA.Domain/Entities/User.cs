@@ -38,9 +38,16 @@ public class User
 
             var localPart = trimmedEmail[..atIndex].Trim();
             var domain = trimmedEmail[(atIndex + 1)..].Trim();
-            return localPart.Length == 0 || domain.Length == 0 ? string.Empty : localPart;
+            if (localPart.Length == 0 || domain.Length == 0 || ContainsWhiteSpace(localPart) || ContainsWhiteSpace(domain))
+            {
+                return string.Empty;
+            }
+
+            return localPart;
         }
     }
+
+    private static bool ContainsWhiteSpace(string value) => value.Any(char.IsWhiteSpace);
 
     public string PasswordHash { get; set; } = string.Empty;
     public UserRole Role { get; set; }
